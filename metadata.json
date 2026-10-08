@@ -1,0 +1,6 @@
+{
+  "name": "Noor Quran - Islamic Companion",
+  "description": "আধুনিক, সুন্দর ও পূর্ণাঙ্গ ইসলামিক মোবাইল অ্যাপ: কালার-কোডেড তাজবীদ কুরআন, নামাজের সময়সূচি, দোয়া, হাদিস, তাসবীহ, কিবলা, কায়দা ও প্রাইভেট ট্র্যাকার।",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
