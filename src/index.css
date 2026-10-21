@@ -1,0 +1,841 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400&family=Hind+Siliguri:wght@300;400;500;600;700&family=Lateef:wght@400;600;700;800&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Scheherazade+New:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-teal: #0F5F62;
+  --color-deep-teal: #083B40;
+  --color-pearl-accent: #B9E2DD;
+  --color-light-pearl: #F3FAF9;
+  --color-card-bg: #FFFFFF;
+  --color-main-text: #123234;
+  --color-secondary-text: #5E7475;
+  --color-soft-border: #D7E9E7;
+  --color-dark-surface: #0C454B;
+  --color-dark-border: #13545A;
+}
+
+/* Official King Fahd Glorious Quran Printing Complex (KFGQPC) Uthmanic Script Fonts */
+@font-face {
+  font-family: 'UthmanicHafs';
+  src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/kfgqpc_uthmanic_script_hafs_regular.woff2') format('woff2'),
+       url('https://verses.quran.com/fonts/uthmanic_hafs.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KFGQPC Uthman Taha Naskh';
+  src: url('https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/fonts/kfgqpc_uthman_taha_naskh_regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root, :host {
+    --font-sans: 'Plus Jakarta Sans', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Playfair Display', 'Hind Siliguri', serif;
+    --font-arabic: 'Noto Naskh Arabic', 'Scheherazade New', 'Amiri', 'Segoe UI', sans-serif;
+
+    /* --- Core Palette (Light Mode Tokens) --- */
+    --theme-primary: #0F5F62;
+    --theme-dark: #083B40;
+    --theme-accent: #B9E2DD;
+    --theme-pale: #F3FAF9;
+    --theme-card-bg: #FFFFFF;
+    --theme-border: #D7E9E7;
+    --theme-main-text: #123234;
+    --theme-secondary-text: #5E7475;
+
+    /* --- Backwards Compatibility / Tailwind Tokens --- */
+    --primary-teal: var(--theme-primary);
+    --deep-teal: var(--theme-dark);
+    --pearl-accent: var(--theme-accent);
+    --light-pearl: var(--theme-pale);
+    --card-bg: var(--theme-card-bg);
+    --main-text: var(--theme-main-text);
+    --secondary-text: var(--theme-secondary-text);
+    --soft-border: var(--theme-border);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    --theme-primary: #148084;
+    --theme-dark: #B9E2DD;
+    --theme-accent: #194E52;
+    --theme-pale: #061B1D;
+    --theme-card-bg: #0B2527;
+    --theme-border: #153E41;
+    --theme-main-text: #E6F3F2;
+    --theme-secondary-text: #92A9A8;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--theme-pale, #F3FAF9);
+    color: var(--theme-main-text, #123234);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .dark body,
+  html.dark body {
+    background-color: #083B40;
+    color: #F3FAF9;
+  }
+
+  ::selection {
+    background-color: var(--theme-accent, #B9E2DD);
+    color: var(--theme-dark, #083B40);
+  }
+}
+
+/* Islamic Typography & Components */
+.quran-text {
+  font-family: var(--font-arabic);
+  font-size: 2.25rem;
+  line-height: 2.5;
+  direction: rtl;
+  text-align: right;
+  word-spacing: 4px;
+}
+
+.ayah-active {
+  background-color: rgba(185, 226, 221, 0.2);
+  border-radius: 8px;
+  padding: 4px 8px;
+  transition: var(--transition-smooth);
+}
+
+[data-theme="dark"] .ayah-active {
+  background-color: rgba(25, 78, 82, 0.4);
+}
+
+.theme-card {
+  background-color: var(--theme-card-bg);
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: var(--transition-smooth);
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 95, 98, 0.08);
+}
+
+/* Slim Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 95, 98, 0.3);
+  border-radius: 9999px;
+  transition: var(--transition-smooth);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 95, 98, 0.6);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(185, 226, 221, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(185, 226, 221, 0.5);
+}
+
+/* Base Quran Font - Crystal Clear Jobor (Fatha), Jer (Kasra), and Pesh (Damma) */
+.font-uthmani,
+.font-quran {
+  font-family: 'Noto Naskh Arabic', 'Scheherazade New', 'Amiri', 'Segoe UI', serif;
+  letter-spacing: 0.02em;
+  line-height: 2.2;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+  font-variant-ligatures: contextual common-ligatures;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-arabic {
+  font-family: 'Noto Naskh Arabic', 'Scheherazade New', 'Amiri', 'Segoe UI', sans-serif;
+  letter-spacing: 0.02em;
+  line-height: 2.1;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+  font-variant-ligatures: contextual common-ligatures;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* User Selectable Arabic Fonts */
+.font-arabic-noto-naskh {
+  font-family: 'Noto Naskh Arabic', 'Scheherazade New', sans-serif !important;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+}
+
+.font-arabic-scheherazade {
+  font-family: 'Scheherazade New', 'Noto Naskh Arabic', serif !important;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+}
+
+.font-arabic-amiri-quran {
+  font-family: 'Amiri Quran', 'Amiri', serif !important;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+}
+
+.font-arabic-amiri {
+  font-family: 'Amiri', 'Scheherazade New', serif !important;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+}
+
+.font-arabic-lateef {
+  font-family: 'Lateef', 'DecoType Naskh', cursive, serif !important;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+}
+
+.font-arabic-noto-nastaliq {
+  font-family: 'Noto Nastaliq Urdu', 'Urdu Typesetting', 'Jameel Noori Nastaleeq', serif !important;
+  font-feature-settings: "calt", "ccmp", "liga", "locl", "mark", "mkmk";
+  line-height: 2.8 !important;
+}
+
+.font-bengali {
+  font-family: 'Hind Siliguri', sans-serif;
+}
+
+/* Accessible Quran Tajweed Palette (High readability on cream & dark paper) */
+.tajweed-ghunnah {
+  color: #C5221F; /* Red: Ghunnah */
+  font-weight: 600;
+}
+.tajweed-qalqalah {
+  color: #1565C0; /* Blue: Qalqalah */
+  font-weight: 700;
+}
+.tajweed-idgham {
+  color: #1B7340; /* Green: Idgham */
+  font-weight: 600;
+}
+.tajweed-ikhfa {
+  color: #D9530F; /* Orange: Ikhfa */
+  font-weight: 600;
+}
+.tajweed-madd {
+  color: #7B1FA2; /* Purple: Madd */
+  font-weight: 700;
+}
+.tajweed-silent,
+.tajweed-waqf,
+.tajweed-iqlab {
+  color: #70757A; /* Gray: Silent letters / Waqf */
+  font-weight: 500;
+}
+
+.dark .tajweed-ghunnah { color: #EF5350; }
+.dark .tajweed-qalqalah { color: #42A5F5; }
+.dark .tajweed-idgham { color: #66BB6A; }
+.dark .tajweed-ikhfa { color: #FF8A65; }
+.dark .tajweed-madd { color: #BA68C8; }
+.dark .tajweed-silent,
+.dark .tajweed-waqf,
+.dark .tajweed-iqlab { color: #9E9E9E; }
+
+/* Color-Blind Tajwid Accessibility Mode (distinguished by underline patterns & symbols) */
+.tajweed-colorblind .tajweed-ghunnah {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+}
+.tajweed-colorblind .tajweed-qalqalah {
+  text-decoration: underline;
+  text-decoration-style: double;
+  text-decoration-thickness: 2px;
+}
+.tajweed-colorblind .tajweed-idgham {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 2px;
+}
+.tajweed-colorblind .tajweed-ikhfa {
+  border-bottom: 2px dashed currentColor;
+}
+.tajweed-colorblind .tajweed-madd {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-thickness: 2px;
+}
+.tajweed-colorblind .tajweed-silent,
+.tajweed-colorblind .tajweed-waqf {
+  opacity: 0.65;
+}
+
+/* Subtle Islamic Geometric Pattern Background */
+.islamic-pattern-bg {
+  background-image: radial-gradient(rgba(33, 64, 154, 0.04) 1px, transparent 1px), radial-gradient(rgba(233, 183, 195, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+.dark .islamic-pattern-bg {
+  background-image: radial-gradient(rgba(233, 183, 195, 0.05) 1px, transparent 1px), radial-gradient(rgba(33, 64, 154, 0.08) 1px, transparent 1px);
+}
+
+/* Eye-Friendly, Comfortable & Premium Dark Mode (Calm Midnight Slate & Elevated Surfaces) */
+html.dark {
+  color-scheme: dark;
+  background-color: #0E1416;
+  color: #EAF2F1;
+  --mushaf-paper-bg: #121C1E;
+}
+
+html.dark body {
+  background-color: #0E1416 !important;
+  color: #EAF2F1 !important;
+}
+
+/* Dark mode text hierarchy - clear, soothing, high-legibility without harsh glaring white */
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700 {
+  color: #EAF2F1 !important;
+}
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #9AB2B0 !important;
+}
+.dark .text-slate-300,
+.dark .text-slate-200,
+.dark .text-slate-100 {
+  color: #D2E2E0 !important;
+}
+
+/* Card, Badge & Container dark mode adjustments - warm, soft elevated dark */
+.dark .bg-slate-50,
+.dark .bg-white {
+  background-color: #152226 !important;
+}
+.dark .border-slate-100,
+.dark .border-slate-200 {
+  border-color: #22353B !important;
+}
+
+/* Inputs, textareas & selects in dark mode - comfortable contrast */
+.dark input[type="text"],
+.dark input[type="search"],
+.dark input[type="password"],
+.dark select,
+.dark textarea {
+  background-color: #121C1E !important;
+  color: #EAF2F1 !important;
+  border-color: #22353B !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6E8886 !important;
+}
+
+/* AMOLED dark theme helper */
+.theme-amoled {
+  background-color: #050914 !important;
+  color: #F8FAFC !important;
+}
+
+.theme-amoled body {
+  background-color: #050914 !important;
+}
+
+.theme-amoled .bg-slate-900,
+.theme-amoled .bg-slate-950,
+.theme-amoled .dark\:bg-slate-900,
+.theme-amoled .dark\:bg-slate-950 {
+  background-color: #050914 !important;
+}
+
+.theme-amoled .bg-white,
+.theme-amoled .dark\:bg-white {
+  background-color: #080D1C !important;
+  border-color: #141E38 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 95, 98, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 95, 98, 0.55);
+}
+
+/* ==========================================================================
+   DEFAULT CORE THEME: PREMIUM TEAL + PEARL ISLAMIC THEME
+   - Primary Teal: #0F5F62
+   - Deep Teal / Dark Mode Base: #083B40
+   - Pearl Accent: #B9E2DD
+   - Light Pearl Background: #F3FAF9
+   - Card Background: #FFFFFF
+   - Main Text: #123234
+   - Secondary Text: #5E7475
+   - Soft Border: #D7E9E7
+   ========================================================================== */
+
+:root {
+  --theme-primary: #0F5F62;
+  --theme-dark: #083B40;
+  --theme-accent: #B9E2DD;
+  --theme-pale: #F3FAF9;
+  --theme-border: #D7E9E7;
+  --theme-main-text: #123234;
+  --theme-secondary-text: #5E7475;
+}
+
+/* Global Remapping to Teal + Pearl Palette for all legacy tokens */
+.bg-\[\#21409A\],
+.bg-\[\#10235A\],
+.bg-\[\#18327E\],
+.bg-\[\#1c357f\] {
+  background-color: #0F5F62 !important;
+}
+
+.hover\:bg-\[\#10235A\]:hover,
+.hover\:bg-\[\#21409A\]:hover,
+.active\:bg-\[\#10235A\]:active {
+  background-color: #083B40 !important;
+}
+
+.text-\[\#21409A\],
+.text-\[\#10235A\],
+.text-\[\#18327E\] {
+  color: #0F5F62 !important;
+}
+
+.dark .text-\[\#21409A\],
+.dark .text-\[\#10235A\] {
+  color: #B9E2DD !important;
+}
+
+.text-\[\#E9B7C3\] {
+  color: #0F5F62 !important;
+}
+
+.dark .text-\[\#E9B7C3\] {
+  color: #B9E2DD !important;
+}
+
+.bg-\[\#E9B7C3\] {
+  background-color: #B9E2DD !important;
+  color: #083B40 !important;
+}
+
+/* Light mode surface tokens (scoped strictly to light mode so they NEVER bleed or fade into dark mode) */
+html:not(.dark) .bg-\[\#F8E8ED\],
+html:not(.dark) .bg-\[\#FCFAF8\],
+html:not(.dark) .bg-\[\#FAF6EB\],
+html:not(.dark) .bg-\[\#FAF8F5\],
+html:not(.dark) .bg-\[\#F9F6EE\] {
+  background-color: #F3FAF9 !important;
+}
+
+html:not(.dark) .border-\[\#E7D9DE\],
+html:not(.dark) .border-\[\#E7D9DE\]\/80 {
+  border-color: #D7E9E7 !important;
+}
+
+.border-\[\#21409A\],
+.border-\[\#10235A\] {
+  border-color: #0F5F62 !important;
+}
+
+/* Dark Mode Surfaces: Deep Teal Base #083B40 with dark teal-gray surfaces #0C454B (NO white fades or washed-out haze) */
+.dark,
+[data-theme="dark"],
+.theme-dark {
+  background-color: #0E1416 !important;
+  color: #EAF2F1 !important;
+}
+
+/* Eliminate all white-fades and milky films in dark mode:
+   All light surfaces and transparent white utilities receive eye-comforting dark midnight slate */
+.dark .bg-white,
+.dark .bg-\[\#FCFAF8\],
+.dark .bg-\[\#F8E8ED\],
+.dark .bg-\[\#FAF6EB\],
+.dark .bg-\[\#FAF8F5\],
+.dark .bg-\[\#F9F6EE\],
+.dark .bg-slate-50,
+.dark .bg-slate-100 {
+  background-color: #152226 !important;
+}
+
+/* Semi-transparent white overlays & frosted backdrops that cause 'white fade' */
+.dark [class*="bg-white/"],
+.dark [class*="bg-slate-50/"],
+.dark [class*="bg-slate-100/"],
+.dark [class*="bg-[#FCFAF8]/"],
+.dark [class*="bg-[#F8E8ED]/"] {
+  background-color: rgba(21, 34, 38, 0.85) !important;
+}
+
+.dark .backdrop-blur-md,
+.dark .backdrop-blur-lg,
+.dark .backdrop-blur-xl,
+.dark .backdrop-blur {
+  background-color: rgba(14, 20, 22, 0.92) !important;
+  border-color: #22353B !important;
+}
+
+/* Deep surface cards & chips in dark mode */
+.dark .bg-\[\#0C152E\],
+.dark .bg-\[\#142042\],
+.dark .bg-\[\#10235A\],
+.dark .bg-\[\#1C2D5A\],
+.dark .bg-\[\#083B40\] {
+  background-color: #18282D !important;
+}
+
+.dark .bg-\[\#10235A\]\/50,
+.dark .bg-\[\#1C2D5A\]\/40,
+.dark .bg-\[\#142042\]\/70,
+.dark .bg-\[\#083B40\]\/95 {
+  background-color: rgba(24, 40, 45, 0.88) !important;
+}
+
+/* Unified calm borders - non-glaring, soothing separation */
+.dark .border-\[\#E7D9DE\],
+.dark .border-\[\#E7D9DE\]\/80,
+.dark .border-\[\#D7E9E7\],
+.dark .border-\[\#1C2D5A\],
+.dark .border-\[\#24386E\],
+.dark .border-\[\#2A3F7A\],
+.dark .border-\[\#21409A\],
+.dark .border-\[\#13545A\] {
+  border-color: #22353B !important;
+}
+
+/* Text readability - high contrast, soft on human vision */
+.dark .text-\[\#F8E8ED\],
+.dark .text-\[\#FCFAF8\],
+.dark .text-\[\#123234\],
+.dark .text-\[\#1F2937\],
+.dark .text-\[\#10235A\] {
+  color: #EAF2F1 !important;
+}
+
+.dark .text-\[\#5E7475\],
+.dark .text-\[\#6B7280\],
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-muted-slate {
+  color: #9AB2B0 !important;
+}
+
+.dark .text-slate-300,
+.dark .text-slate-200 {
+  color: #D2E2E0 !important;
+}
+
+/* ==========================================================================
+   DYNAMIC COLOR THEME SYSTEM (All presets & Custom primary color)
+   ========================================================================== */
+
+/* Universal Theme Rules - instantly updates all app components when any theme is selected */
+html[data-color-theme] .bg-\[\#21409A\]:not([data-swatch-dot]),
+html[data-color-theme] .bg-\[\#0F5F62\]:not([data-swatch-dot]) {
+  background-color: var(--theme-primary) !important;
+}
+
+html[data-color-theme] .hover\:bg-\[\#10235A\]:hover,
+html[data-color-theme] .hover\:bg-\[\#083B40\]:hover {
+  background-color: var(--theme-dark) !important;
+}
+
+html[data-color-theme] .text-\[\#21409A\],
+html[data-color-theme] .text-\[\#0F5F62\] {
+  color: var(--theme-primary) !important;
+}
+
+html[data-color-theme] .text-\[\#10235A\],
+html[data-color-theme] .text-\[\#083B40\] {
+  color: var(--theme-dark) !important;
+}
+
+html[data-color-theme] .border-\[\#21409A\],
+html[data-color-theme] .border-\[\#0F5F62\] {
+  border-color: var(--theme-primary) !important;
+}
+
+html[data-color-theme] .border-t-\[\#21409A\],
+html[data-color-theme] .border-t-\[\#0F5F62\] {
+  border-top-color: var(--theme-primary) !important;
+}
+
+html[data-color-theme] .bg-\[\#F8E8ED\],
+html[data-color-theme] .bg-\[\#F3FAF9\] {
+  background-color: var(--theme-pale) !important;
+}
+
+html[data-color-theme] .border-\[\#E7D9DE\],
+html[data-color-theme] .border-\[\#D7E9E7\] {
+  border-color: var(--theme-border) !important;
+}
+
+html[data-color-theme] .ring-\[\#21409A\],
+html[data-color-theme] .ring-\[\#0F5F62\] {
+  --tw-ring-color: var(--theme-primary) !important;
+}
+
+html[data-color-theme] .dark .text-\[\#E9B7C3\],
+html[data-color-theme] .dark .text-\[\#B9E2DD\],
+html[data-color-theme] .dark .text-\[\#2DD4BF\],
+html[data-color-theme] .dark .text-\[\#21409A\],
+html[data-color-theme] .dark .text-\[\#0F5F62\] {
+  color: var(--theme-accent) !important;
+}
+
+/* 1. Rose Quartz (রোজ কোয়ার্টজ) */
+[data-color-theme="rose"] {
+  --theme-primary: #9D174D;
+  --theme-dark: #831843;
+  --theme-accent: #F472B6;
+  --theme-pale: #FDF2F8;
+  --theme-border: #FBCFE8;
+}
+[data-color-theme="rose"] .bg-\[\#21409A\]:not([data-swatch-dot]),
+[data-color-theme="rose"] .bg-\[\#10235A\]:not([data-swatch-dot]) {
+  background-color: #9D174D !important;
+}
+[data-color-theme="rose"] .hover\:bg-\[\#10235A\]:hover {
+  background-color: #831843 !important;
+}
+[data-color-theme="rose"] .text-\[\#21409A\],
+[data-color-theme="rose"] .text-\[\#10235A\] {
+  color: #9D174D !important;
+}
+[data-color-theme="rose"] .border-\[\#21409A\] {
+  border-color: #9D174D !important;
+}
+[data-color-theme="rose"] .bg-\[\#F8E8ED\] {
+  background-color: #FDF2F8 !important;
+}
+[data-color-theme="rose"] .border-\[\#E7D9DE\] {
+  border-color: #FBCFE8 !important;
+}
+[data-color-theme="rose"] .dark .text-\[\#E9B7C3\],
+[data-color-theme="rose"] .dark .text-\[\#21409A\] {
+  color: #F472B6 !important;
+}
+
+/* 2. Desert Amber (মরু অ্যাম্বার) */
+[data-color-theme="amber"] {
+  --theme-primary: #B45309;
+  --theme-dark: #92400E;
+  --theme-accent: #FBBF24;
+  --theme-pale: #FFFBEB;
+  --theme-border: #FDE68A;
+}
+[data-color-theme="amber"] .bg-\[\#21409A\]:not([data-swatch-dot]),
+[data-color-theme="amber"] .bg-\[\#10235A\]:not([data-swatch-dot]) {
+  background-color: #B45309 !important;
+}
+[data-color-theme="amber"] .hover\:bg-\[\#10235A\]:hover {
+  background-color: #92400E !important;
+}
+[data-color-theme="amber"] .text-\[\#21409A\],
+[data-color-theme="amber"] .text-\[\#10235A\] {
+  color: #B45309 !important;
+}
+[data-color-theme="amber"] .border-\[\#21409A\] {
+  border-color: #B45309 !important;
+}
+[data-color-theme="amber"] .bg-\[\#F8E8ED\] {
+  background-color: #FFFBEB !important;
+}
+[data-color-theme="amber"] .border-\[\#E7D9DE\] {
+  border-color: #FDE68A !important;
+}
+[data-color-theme="amber"] .dark .text-\[\#E9B7C3\],
+[data-color-theme="amber"] .dark .text-\[\#21409A\] {
+  color: #FBBF24 !important;
+}
+
+/* 3. Royal Purple (রয়েল পার্পল) */
+[data-color-theme="purple"] {
+  --theme-primary: #6D28D9;
+  --theme-dark: #5B21B6;
+  --theme-accent: #C4B5FD;
+  --theme-pale: #F5F3FF;
+  --theme-border: #DDD6FE;
+}
+[data-color-theme="purple"] .bg-\[\#21409A\]:not([data-swatch-dot]),
+[data-color-theme="purple"] .bg-\[\#10235A\]:not([data-swatch-dot]) {
+  background-color: #6D28D9 !important;
+}
+[data-color-theme="purple"] .hover\:bg-\[\#10235A\]:hover {
+  background-color: #5B21B6 !important;
+}
+[data-color-theme="purple"] .text-\[\#21409A\],
+[data-color-theme="purple"] .text-\[\#10235A\] {
+  color: #6D28D9 !important;
+}
+[data-color-theme="purple"] .border-\[\#21409A\] {
+  border-color: #6D28D9 !important;
+}
+[data-color-theme="purple"] .bg-\[\#F8E8ED\] {
+  background-color: #F5F3FF !important;
+}
+[data-color-theme="purple"] .border-\[\#E7D9DE\] {
+  border-color: #DDD6FE !important;
+}
+[data-color-theme="purple"] .dark .text-\[\#E9B7C3\],
+[data-color-theme="purple"] .dark .text-\[\#21409A\] {
+  color: #C4B5FD !important;
+}
+
+/* 4. Emerald Green (পান্না সবুজ) */
+[data-color-theme="emerald"] {
+  --theme-primary: #047857;
+  --theme-dark: #064E3B;
+  --theme-accent: #34D399;
+  --theme-pale: #ECFDF5;
+  --theme-border: #A7F3D0;
+}
+[data-color-theme="emerald"] .bg-\[\#21409A\]:not([data-swatch-dot]),
+[data-color-theme="emerald"] .bg-\[\#10235A\]:not([data-swatch-dot]) {
+  background-color: #047857 !important;
+}
+[data-color-theme="emerald"] .hover\:bg-\[\#10235A\]:hover {
+  background-color: #064E3B !important;
+}
+[data-color-theme="emerald"] .text-\[\#21409A\],
+[data-color-theme="emerald"] .text-\[\#10235A\] {
+  color: #047857 !important;
+}
+[data-color-theme="emerald"] .dark .text-\[\#E9B7C3\],
+[data-color-theme="emerald"] .dark .text-\[\#21409A\] {
+  color: #34D399 !important;
+}
+[data-color-theme="emerald"] .border-\[\#21409A\] {
+  border-color: #059669 !important;
+}
+[data-color-theme="emerald"] .bg-\[\#F8E8ED\] {
+  background-color: #ECFDF5 !important;
+}
+[data-color-theme="emerald"] .border-\[\#E7D9DE\] {
+  border-color: #A7F3D0 !important;
+}
+
+/* 5. Minimal Slate (মিনিমাল স্লেট) */
+[data-color-theme="minimal"] {
+  --theme-primary: #334155;
+  --theme-dark: #1E293B;
+  --theme-accent: #94A3B8;
+  --theme-pale: #F1F5F9;
+  --theme-border: #CBD5E1;
+}
+[data-color-theme="minimal"] .bg-\[\#21409A\]:not([data-swatch-dot]),
+[data-color-theme="minimal"] .bg-\[\#10235A\]:not([data-swatch-dot]) {
+  background-color: #334155 !important;
+}
+[data-color-theme="minimal"] .hover\:bg-\[\#10235A\]:hover {
+  background-color: #1E293B !important;
+}
+[data-color-theme="minimal"] .text-\[\#21409A\],
+[data-color-theme="minimal"] .text-\[\#10235A\] {
+  color: #1E293B !important;
+}
+[data-color-theme="minimal"] .dark .text-\[\#E9B7C3\],
+[data-color-theme="minimal"] .dark .text-\[\#21409A\] {
+  color: #94A3B8 !important;
+}
+[data-color-theme="minimal"] .border-\[\#21409A\] {
+  border-color: #475569 !important;
+}
+[data-color-theme="minimal"] .bg-\[\#F8E8ED\] {
+  background-color: #F1F5F9 !important;
+}
+[data-color-theme="minimal"] .border-\[\#E7D9DE\] {
+  border-color: #CBD5E1 !important;
+}
+
+/* 6. Islamic Teal (টিল ও পার্ল - ডিফল্ট) */
+[data-color-theme="teal"] {
+  --theme-primary: #0F5F62;
+  --theme-dark: #083B40;
+  --theme-accent: #B9E2DD;
+  --theme-pale: #F3FAF9;
+  --theme-border: #D7E9E7;
+}
+[data-color-theme="teal"] .bg-\[\#21409A\]:not([data-swatch-dot]),
+[data-color-theme="teal"] .bg-\[\#10235A\]:not([data-swatch-dot]) {
+  background-color: #0F5F62 !important;
+}
+[data-color-theme="teal"] .hover\:bg-\[\#10235A\]:hover {
+  background-color: #083B40 !important;
+}
+[data-color-theme="teal"] .text-\[\#21409A\],
+[data-color-theme="teal"] .text-\[\#10235A\] {
+  color: #0F5F62 !important;
+}
+[data-color-theme="teal"] .border-\[\#21409A\] {
+  border-color: #0F5F62 !important;
+}
+[data-color-theme="teal"] .bg-\[\#F8E8ED\] {
+  background-color: #F3FAF9 !important;
+}
+[data-color-theme="teal"] .border-\[\#E7D9DE\] {
+  border-color: #D7E9E7 !important;
+}
+[data-color-theme="teal"] .dark .text-\[\#E9B7C3\],
+[data-color-theme="teal"] .dark .text-\[\#21409A\] {
+  color: #B9E2DD !important;
+}
+
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.reduce-motion *,
+.reduce-motion ::before,
+.reduce-motion ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Subtle gentle animation tokens (180-220ms soft ease) */
+.transition-calm {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 200ms;
+}

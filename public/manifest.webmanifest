@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "Noor Quran",
+  "short_name": "Noor Quran",
+  "description": "Complete Islamic Companion with Offline Quran, Prayer Times, Tasbeeh and Duas",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1416",
+  "theme_color": "#0E1416",
+  "icons": [
+    {
+      "src": "/islamic_badge.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/islamic_badge.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
