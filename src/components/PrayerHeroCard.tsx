@@ -333,7 +333,7 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           handleCardClick();
         }
       }}
-      className="relative overflow-hidden rounded-3xl text-white shadow-xl p-5 cursor-pointer select-none transition-all duration-300 active:scale-[0.99] group focus:outline-none focus:ring-2 focus:ring-white/40"
+      className="relative overflow-hidden rounded-2xl sm:rounded-3xl text-white shadow-lg p-3 sm:p-4 cursor-pointer select-none transition-all duration-300 active:scale-[0.99] group focus:outline-none focus:ring-2 focus:ring-white/40"
       style={{
         transform: 'translateZ(0)',
       }}
@@ -924,13 +924,13 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
       {/* =========================================================================
           CONTENT LAYER - RICH & ACCESSIBLE
           ========================================================================= */}
-      <div className="relative z-10 space-y-3.5">
+      <div className="relative z-10 space-y-2 sm:space-y-2.5">
         {/* Top Status & Style Badge Row */}
-        <div className="flex items-center justify-between gap-2 min-h-[30px]">
+        <div className="flex items-center justify-between gap-1.5 min-h-[24px]">
           {/* Left: Waqt badge & Friday badge */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
-              className={`text-xs uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border backdrop-blur-xs transition-colors ${
+              className={`text-[10px] sm:text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border backdrop-blur-xs transition-colors ${
                 styleId === 'classic_teal'
                   ? 'bg-[#B9E2DD]/20 text-[#B9E2DD] border-[#B9E2DD]/40'
                   : styleId === 'thuluth_gold_calligraphy'
@@ -952,14 +952,14 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
             </span>
 
             {isFriday && (
-              <span className="px-2 py-0.5 rounded-full bg-white/15 text-white text-[10px] font-bold border border-white/30 backdrop-blur-xs">
-                {language === 'bn' ? "🕌 পবিত্র জুমু'আ" : '🕌 Blessed Friday'}
+              <span className="px-1.5 py-0.5 rounded-full bg-white/15 text-white text-[9.5px] font-bold border border-white/30 backdrop-blur-xs">
+                {language === 'bn' ? "🕌 জুমু'আ" : '🕌 Friday'}
               </span>
             )}
 
             {/* Daily Prayer Consistency Tracker Indicator */}
             <span
-              className="px-2 py-0.5 rounded-full bg-black/40 text-white text-[10px] font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 shadow-xs"
+              className="px-1.5 py-0.5 rounded-full bg-black/40 text-white text-[9.5px] font-bold border border-white/20 backdrop-blur-xs flex items-center gap-1 shadow-xs"
               title={
                 language === 'bn'
                   ? 'আজকের ৫ ওয়াক্ত সালাত সম্পন্ন করার অগ্রগতি'
@@ -977,8 +977,8 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
               />
               <span>
                 {language === 'bn'
-                  ? `সালাত: ${toBn(completedCount)}/৫ (${toBn(Math.round((completedCount / 5) * 100))}%)`
-                  : `Prayers: ${completedCount}/5 (${Math.round((completedCount / 5) * 100)}%)`}
+                  ? `${toBn(completedCount)}/৫`
+                  : `${completedCount}/5`}
               </span>
             </span>
           </div>
@@ -996,28 +996,28 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 e.stopPropagation();
                 handleCardClick();
               }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur-md transition-all cursor-pointer shadow-md bg-white text-slate-900 border-white hover:bg-white/90"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border backdrop-blur-md transition-all cursor-pointer shadow-md bg-white text-slate-900 border-white hover:bg-white/90"
               title={language === 'bn' ? 'ট্যাপ করে ডিজাইন পরিবর্তন করুন' : 'Tap to change style'}
             >
-              <Palette className="w-3.5 h-3.5 text-amber-600" />
+              <Palette className="w-3 h-3 text-amber-600" />
               <span>{language === 'bn' ? currentStyleMeta.badge : currentStyleMeta.badgeEn}</span>
             </button>
           </div>
         </div>
 
         {/* Current Waqt Title, Next Waqt & Countdown */}
-        <div className="flex items-baseline justify-between pt-0.5">
+        <div className="flex items-baseline justify-between pt-0">
           <div>
-            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-xs">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs leading-tight">
               {getWaqtName(waqtStatus.currentWaqt)}
             </h2>
             {waqtStatus.isProhibited ? (
-              <p className="text-xs text-rose-300 font-medium flex items-center gap-1 mt-0.5">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <p className="text-[10px] text-rose-300 font-medium flex items-center gap-1 mt-0.5">
+                <AlertTriangle className="w-3 h-3 shrink-0" />
                 {waqtStatus.prohibitedReason}
               </p>
             ) : (
-              <p className="text-xs text-white/80 font-medium mt-0.5">
+              <p className="text-[10.5px] text-white/80 font-medium mt-0.5">
                 {t.nextPrayer}:{' '}
                 <strong className="text-white font-semibold">
                   {getWaqtName(waqtStatus.nextWaqt)} ({formatPrayerTime12h(waqtStatus.nextWaqtTime, language)})
@@ -1027,26 +1027,26 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           </div>
 
           <div className="text-right">
-            <span className="text-[10.5px] text-white/75 block leading-tight">
+            <span className="text-[9.5px] text-white/70 block leading-tight">
               {t.timeRemaining}
             </span>
             <span
-              className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums tracking-tight transition-opacity duration-200 block ${
+              className={`text-lg sm:text-xl font-bold font-mono tabular-nums tracking-tight transition-opacity duration-200 block ${
                 styleId === 'classic_teal'
                   ? 'text-[#B9E2DD]'
                   : styleId === 'thuluth_gold_calligraphy'
-                  ? 'text-[#FDE047] drop-shadow-[0_2px_12px_rgba(253,224,71,0.5)]'
+                  ? 'text-[#FDE047]'
                   : styleId === 'kaaba_kiswah'
-                  ? 'text-yellow-300 drop-shadow-[0_2px_10px_rgba(253,224,71,0.4)]'
+                  ? 'text-yellow-300'
                   : styleId === 'sunset_dusk'
-                  ? 'text-[#FDBA74] drop-shadow-[0_2px_10px_rgba(251,146,60,0.4)]'
+                  ? 'text-[#FDBA74]'
                   : styleId === 'modern_glass'
-                  ? 'text-emerald-300 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]'
+                  ? 'text-emerald-300'
                   : styleId === 'celestial_night'
-                  ? 'text-cyan-300 drop-shadow-[0_0_10px_rgba(103,232,249,0.5)]'
+                  ? 'text-cyan-300'
                   : styleId === 'kufic_indigo_mosaic'
-                  ? 'text-cyan-300 drop-shadow-[0_0_10px_rgba(103,232,249,0.5)]'
-                  : 'text-orange-200 drop-shadow-[0_2px_8px_rgba(254,215,170,0.4)]'
+                  ? 'text-cyan-300'
+                  : 'text-orange-200'
               }`}
             >
               {waqtStatus.formattedRemaining}
@@ -1055,8 +1055,8 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
         </div>
 
         {/* Linear Progress Bar customized per theme */}
-        <div className="space-y-1 pt-0.5">
-          <div className="w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/15">
+        <div className="space-y-0.5 pt-0.5">
+          <div className="w-full bg-black/40 rounded-full h-1.5 overflow-hidden border border-white/15">
             <div
               className={`h-full rounded-full transition-all duration-700 ease-out ${
                 styleId === 'classic_teal'
@@ -1068,7 +1068,7 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                   : styleId === 'sunset_dusk'
                   ? 'bg-linear-to-r from-rose-500 via-orange-400 to-amber-300'
                   : styleId === 'modern_glass'
-                  ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]'
+                  ? 'bg-emerald-400'
                   : styleId === 'celestial_night'
                   ? 'bg-linear-to-r from-blue-500 via-cyan-400 to-teal-300'
                   : styleId === 'kufic_indigo_mosaic'
@@ -1078,33 +1078,22 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
               style={{ width: `${waqtStatus.progressPercent}%` }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-white/80">
+          <div className="flex justify-between text-[9px] text-white/75">
             <span>{language === 'bn' ? 'ওয়াক্ত শুরু' : 'Start'}</span>
             <span>
               {language === 'bn'
                 ? `${toBn(waqtStatus.progressPercent)}% অতিবাহিত`
-                : `${waqtStatus.progressPercent}% elapsed`}
+                : `${waqtStatus.progressPercent}%`}
             </span>
             <span>{language === 'bn' ? 'ওয়াক্ত শেষ' : 'End'}</span>
           </div>
         </div>
 
-        {/* 4 Small Balanced Cards inside Hero:
-            1. সূর্যোদয় (Sunrise)
-            2. সূর্যাস্ত (Sunset)
-            3. ইফতার (Iftar)
-            4. তাহাজ্জুদ (Tahajjud)
-        */}
-        {/* 4 Small Balanced Cards inside Hero (Responsive 2x2 on mobile, 4-col on tablet/desktop):
-            1. সূর্যোদয় (Sunrise)
-            2. সূর্যাস্ত (Sunset)
-            3. ইফতার (Iftar)
-            4. তাহাজ্জুদ (Tahajjud - Start & End Times fully visible on all mobile screens)
-        */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-white/15 text-center">
+        {/* 4 Sleek Compact Boxes: Sunrise, Sunset, Iftar, Tahajjud */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 pt-1.5 border-t border-white/15 text-center">
           {/* 1. সূর্যোদয় */}
           <div
-            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
+            className={`rounded-xl p-1.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1122,23 +1111,23 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30'
             }`}
           >
-            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
-              <Sunrise className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <div className="flex items-center justify-center gap-1 text-[10px] text-white/90">
+              <Sunrise className="w-3 h-3 text-amber-300 shrink-0" />
               <span>{t.sunrise}</span>
             </div>
-            <div className="mt-1">
-              <span className="text-sm sm:text-base font-bold font-mono tabular-nums block text-white leading-tight">
+            <div className="mt-0.5">
+              <span className="text-xs sm:text-sm font-bold font-mono tabular-nums block text-white leading-tight">
                 {formatPrayerTime12h(prayerTimes.sunrise, language)}
               </span>
-              <span className="text-[10px] text-white/70 block mt-0.5">
-                {language === 'bn' ? 'ভোর লগ্ন' : 'Dawn Period'}
+              <span className="text-[8.5px] text-white/60 block mt-0.5">
+                {language === 'bn' ? 'ভোর লগ্ন' : 'Dawn'}
               </span>
             </div>
           </div>
 
           {/* 2. সূর্যাস্ত (Sunset) */}
           <div
-            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
+            className={`rounded-xl p-1.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1156,23 +1145,23 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30 ring-1 ring-orange-400/40'
             }`}
           >
-            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
-              <Sunset className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+            <div className="flex items-center justify-center gap-1 text-[10px] text-white/90">
+              <Sunset className="w-3 h-3 text-orange-400 shrink-0" />
               <span>{t.sunset || (language === 'bn' ? 'সূর্যাস্ত' : 'Sunset')}</span>
             </div>
-            <div className="mt-1">
-              <span className="text-sm sm:text-base font-bold font-mono tabular-nums block text-orange-200 leading-tight">
+            <div className="mt-0.5">
+              <span className="text-xs sm:text-sm font-bold font-mono tabular-nums block text-orange-200 leading-tight">
                 {formatPrayerTime12h(prayerTimes.sunset, language)}
               </span>
-              <span className="text-[10px] text-orange-200/70 block mt-0.5">
-                {language === 'bn' ? 'মাগরিব লগ্ন' : 'Dusk Period'}
+              <span className="text-[8.5px] text-orange-200/60 block mt-0.5">
+                {language === 'bn' ? 'মাগরিব লগ্ন' : 'Dusk'}
               </span>
             </div>
           </div>
 
           {/* 3. ইফতার */}
           <div
-            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
+            className={`rounded-xl p-1.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1190,13 +1179,13 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30'
             }`}
           >
-            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
-              <Utensils className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+            <div className="flex items-center justify-center gap-1 text-[10px] text-white/90">
+              <Utensils className="w-3 h-3 text-rose-300 shrink-0" />
               <span>{t.iftar}</span>
             </div>
-            <div className="mt-1">
+            <div className="mt-0.5">
               <span
-                className={`text-sm sm:text-base font-bold font-mono tabular-nums block leading-tight ${
+                className={`text-xs sm:text-sm font-bold font-mono tabular-nums block leading-tight ${
                   styleId === 'classic_teal'
                     ? 'text-[#B9E2DD]'
                     : styleId === 'thuluth_gold_calligraphy'
@@ -1216,15 +1205,15 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
               >
                 {formatPrayerTime12h(prayerTimes.iftar, language)}
               </span>
-              <span className="text-[10px] text-white/70 block mt-0.5">
+              <span className="text-[8.5px] text-white/60 block mt-0.5">
                 {language === 'bn' ? 'রোজার সমাপ্তি' : 'Break Fast'}
               </span>
             </div>
           </div>
 
-          {/* 4. তাহাজ্জুদ (Start and End times clearly visible on mobile) */}
+          {/* 4. তাহাজ্জুদ (Start and End times clearly visible in compact badge) */}
           <div
-            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
+            className={`rounded-xl p-1.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1242,41 +1231,37 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30'
             }`}
           >
-            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
-              <Moon className="w-3.5 h-3.5 text-cyan-200 shrink-0" />
+            <div className="flex items-center justify-center gap-1 text-[10px] text-white/90">
+              <Moon className="w-3 h-3 text-cyan-200 shrink-0" />
               <span>{t.tahajjud}</span>
             </div>
-            <div className="mt-1 flex items-center justify-center gap-1.5 flex-wrap">
-              <div className="bg-black/35 px-1.5 sm:px-2 py-0.5 rounded-lg border border-white/10 text-center">
-                <span className="text-[9px] text-white/70 block leading-none">{language === 'bn' ? 'শুরু' : 'Start'}</span>
-                <span className="text-xs sm:text-[13px] font-bold font-mono tabular-nums text-white block mt-0.5 leading-tight">
-                  {formatPrayerTime12h(prayerTimes.tahajjudStart, language)}
-                </span>
+            <div className="mt-0.5">
+              <div className="flex items-center justify-center gap-1 font-mono text-[10px] sm:text-[11px] font-bold leading-tight flex-wrap">
+                <span className="text-white/90">{formatPrayerTime12h(prayerTimes.tahajjudStart, language)}</span>
+                <span className="text-white/40">-</span>
+                <span className="text-amber-200">{formatPrayerTime12h(prayerTimes.tahajjudEnd, language)}</span>
               </div>
-              <div className="bg-black/35 px-1.5 sm:px-2 py-0.5 rounded-lg border border-amber-300/30 text-center">
-                <span className="text-[9px] text-amber-200/90 block leading-none">{language === 'bn' ? 'শেষ সময়' : 'End Time'}</span>
-                <span className="text-xs sm:text-[13px] font-bold font-mono tabular-nums text-amber-200 block mt-0.5 leading-tight">
-                  {formatPrayerTime12h(prayerTimes.tahajjudEnd, language)}
-                </span>
-              </div>
+              <span className="text-[8px] text-amber-200/80 block mt-0.5 leading-none">
+                {language === 'bn' ? 'শেষ সময় সহ' : 'Until Fajr'}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Subtle tap guidance hint pill at bottom - vanishes after 2-2.5s, appears on tap */}
         <div
-          className={`flex items-center justify-between pt-0.5 text-[10px] text-white/75 transition-all duration-300 min-h-[16px] ${
+          className={`flex items-center justify-between pt-0 text-[9.5px] text-white/70 transition-all duration-300 min-h-[14px] ${
             showIndicator
               ? 'opacity-100 translate-y-0'
-              : 'opacity-0 translate-y-1 pointer-events-none'
+              : 'opacity-0 translate-y-0.5 pointer-events-none'
           }`}
         >
           <span className="flex items-center gap-1">
             <span>{currentStyleMeta.icon}</span>
             <span>{language === 'bn' ? currentStyleMeta.nameBn : currentStyleMeta.nameEn}</span>
           </span>
-          <span className="flex items-center gap-1 text-white/80 group-hover:text-white transition-colors">
-            <span>{language === 'bn' ? '👆 ট্যাপে পরবর্তী স্টাইল' : '👆 Tap for next style'}</span>
+          <span className="flex items-center gap-1 text-white/75 group-hover:text-white transition-colors">
+            <span>{language === 'bn' ? '👆 ট্যাপে পরিবর্তন' : '👆 Tap to switch'}</span>
           </span>
         </div>
       </div>

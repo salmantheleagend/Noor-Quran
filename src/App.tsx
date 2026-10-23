@@ -334,7 +334,10 @@ export default function App() {
     }));
   };
 
-  const handleNavigate = (tab: string, extra?: unknown) => {
+  // Navigation history stack for mobile back-button support
+  const tabHistoryRef = useRef<string[]>(['home']);
+
+  const handleNavigate = (tab: string, extra?: unknown, pushToBrowserHistory = true) => {
     if (tab === 'quran' && typeof extra === 'number') {
       setActiveSurahToOpen(extra);
     }
@@ -343,9 +346,71 @@ export default function App() {
       setCurrentTab('home');
       return;
     }
+
+    if (pushToBrowserHistory && tab !== currentTab) {
+      tabHistoryRef.current.push(tab);
+      if (typeof window !== 'undefined') {
+        window.history.pushState({ tab, extra }, '', '');
+      }
+    }
+
     setCurrentTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const handleGoBack = () => {
+    triggerHaptic(15);
+    if (typeof window !== 'undefined') {
+      window.history.back();
+    }
+  };
+
+  // Mobile Back Button (Hardware / Browser / Gesture) Integration
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Ensure baseline state exists
+    if (!window.history.state) {
+      window.history.replaceState({ tab: 'home' }, '', '');
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      // 1. If any modal is open, close modal and prevent app exit
+      if (isSettingsModalOpen) {
+        setIsSettingsModalOpen(false);
+        return;
+      }
+      if (isLocationModalOpen) {
+        setIsLocationModalOpen(false);
+        return;
+      }
+      if (isGenderModalOpen && preferences.gender) {
+        setIsGenderModalOpen(false);
+        return;
+      }
+
+      // 2. Pop from our internal tab history stack
+      if (tabHistoryRef.current.length > 1) {
+        tabHistoryRef.current.pop();
+        const prevTab = tabHistoryRef.current[tabHistoryRef.current.length - 1] || 'home';
+        handleNavigate(prevTab, undefined, false);
+      } else if (e.state && e.state.tab) {
+        handleNavigate(e.state.tab, e.state.extra, false);
+      } else {
+        // Return to home if not on home
+        setCurrentTab((curr) => {
+          if (curr !== 'home') {
+            window.history.replaceState({ tab: 'home' }, '', '');
+            return 'home';
+          }
+          return curr;
+        });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isSettingsModalOpen, isLocationModalOpen, isGenderModalOpen, preferences.gender, currentTab]);
 
   // Horizontal swipe gestures to switch between tabs (Home, Quran, Prayer, Search, Menu)
   const touchStartRef = useRef<{ x: number; y: number; time: number; target: EventTarget | null } | null>(null);
@@ -473,6 +538,8 @@ export default function App() {
         onToggleTheme={handleToggleTheme}
         onChangeLanguage={(lang) => handleUpdatePreferences({ language: lang })}
         onOpenSettings={() => setIsSettingsModalOpen(true)}
+        currentTab={currentTab}
+        onBack={handleGoBack}
       />
 
       {/* Main Content Area with Touch Gestures for Tab Navigation */}

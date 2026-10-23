@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppLanguage, AppTheme, LocationInfo } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
-import { MapPin, Moon, Sun, Settings, Globe } from 'lucide-react';
+import { MapPin, Moon, Sun, Settings, Globe, ChevronLeft } from 'lucide-react';
 import { triggerHaptic } from '../utils/audioPlayer';
 
 interface HeaderProps {
@@ -12,6 +12,8 @@ interface HeaderProps {
   onToggleTheme: () => void;
   onChangeLanguage: (lang: AppLanguage) => void;
   onOpenSettings: () => void;
+  currentTab?: string;
+  onBack?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,6 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   onChangeLanguage,
   onOpenSettings,
+  currentTab = 'home',
+  onBack,
 }) => {
   const t = TRANSLATIONS[language];
 
@@ -44,9 +48,24 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-white/95 dark:bg-[#0E1416]/95 border-b border-[#E7D9DE] dark:border-[#22353B] px-3 sm:px-4 py-2 transition-colors">
       <div className="max-w-3xl mx-auto flex items-center justify-between gap-2">
-        {/* Brand Zone */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-9 h-9 rounded-2xl bg-[#083B40] dark:bg-[#18282D] flex items-center justify-center text-white font-arabic font-bold text-lg shadow-xs ring-1 ring-[#2DD4BF]/30">
+        {/* Brand Zone with Back Button when in sub-screens */}
+        <div className="flex items-center gap-2 shrink-0">
+          {currentTab !== 'home' && onBack && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(15);
+                onBack();
+              }}
+              className="p-1.5 -ml-1 rounded-xl bg-[#F8E8ED] dark:bg-[#18282D] text-[#083B40] dark:text-[#2DD4BF] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center border border-[#E7D9DE] dark:border-[#22353B] shadow-2xs"
+              title={language === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}
+              aria-label="Back"
+            >
+              <ChevronLeft className="w-5 h-5 stroke-[2.3]" />
+            </button>
+          )}
+
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-[#083B40] dark:bg-[#18282D] flex items-center justify-center text-white font-arabic font-bold text-base sm:text-lg shadow-xs ring-1 ring-[#2DD4BF]/30">
             ن
           </div>
           <div className="min-w-0">
@@ -54,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
               Noor Quran
             </h1>
             {t.appSubtitle ? (
-              <p className="text-[10.5px] text-[#6B7280] dark:text-[#9AB2B0] font-medium truncate mt-0.5">
+              <p className="text-[10px] sm:text-[10.5px] text-[#6B7280] dark:text-[#9AB2B0] font-medium truncate mt-0.5">
                 {t.appSubtitle}
               </p>
             ) : null}
