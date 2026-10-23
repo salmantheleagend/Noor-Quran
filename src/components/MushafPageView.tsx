@@ -961,7 +961,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
 
       {/* Floating Quick Page Scrubber & Scroll Controller */}
       {scrollMode === 'continuous' && !isDistractionFree && (
-        <div className="fixed bottom-[calc(5.2rem+env(safe-area-inset-bottom,0px))] right-3 sm:right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-[calc(5.8rem+env(safe-area-inset-bottom,0px))] right-3 sm:right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
           {/* Scroll to Top */}
           <button
             type="button"
@@ -996,7 +996,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
           ========================================================================= */}
       {!isDistractionFree && (
         <div
-          className="fixed bottom-[calc(5.2rem+env(safe-area-inset-bottom,0px))] left-3 sm:left-6 z-40"
+          className="fixed bottom-[calc(5.8rem+env(safe-area-inset-bottom,0px))] left-3 sm:left-6 z-40"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="relative">

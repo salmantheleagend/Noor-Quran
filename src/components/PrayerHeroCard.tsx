@@ -11,6 +11,14 @@ import { AppLanguage, CurrentWaqtStatus, PrayerTimesData } from '../types';
 import { triggerHaptic } from '../utils/audioPlayer';
 import { toBn } from '../utils/prayerTimes';
 
+import nabawiArt from '../assets/images/masjid_nabawi_art_1792513330965.jpg';
+import kaabaArt from '../assets/images/kaaba_makkah_art_1790957360864.jpg';
+import aqsaArt from '../assets/images/masjid_aqsa_art_1792513345392.jpg';
+import sheikhZayedArt from '../assets/images/sheikh_zayed_art_1792513359645.jpg';
+import blueMosqueArt from '../assets/images/blue_mosque_art_1792513374990.jpg';
+import baitulMukarramArt from '../assets/images/baitul_mukarram_art_1792513393050.jpg';
+import heroMosqueArt from '../assets/images/islamic_hero_mosque_1790957336258.jpg';
+
 export type PrayerCardStyleId =
   | 'masjid_nabawi'
   | 'masjid_haram'
@@ -355,9 +363,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           {/* Mosque Photographic Artwork Backdrop */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-40 mix-blend-luminosity">
             <img
-              src="/src/assets/images/masjid_nabawi_art_1792513330965.jpg"
-              alt="Al-Masjid an-Nabawi Madinah"
+              src={nabawiArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover object-center filter saturate-150 contrast-110"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-t from-[#021A15] via-[#021A15]/60 to-transparent" />
           </div>
@@ -392,9 +402,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           {/* Kaaba & Masjid al-Haram Grand Artwork Backdrop */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-35">
             <img
-              src="/src/assets/images/kaaba_makkah_art_1790957360864.jpg"
-              alt="Masjid al-Haram & Kaaba"
+              src={kaabaArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover object-center filter saturate-125"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-t from-[#0A0B0E] via-[#0A0B0E]/60 to-transparent" />
           </div>
@@ -418,9 +430,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           {/* Al-Aqsa & Golden Dome Artwork Backdrop */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-40">
             <img
-              src="/src/assets/images/masjid_aqsa_art_1792513345392.jpg"
-              alt="Al-Aqsa Mosque & Dome of the Rock"
+              src={aqsaArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover object-center filter saturate-130"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-t from-[#091428] via-[#091428]/60 to-transparent" />
           </div>
@@ -444,9 +458,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           {/* Sheikh Zayed Reflective Pool Artwork Backdrop */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-40">
             <img
-              src="/src/assets/images/sheikh_zayed_art_1792513359645.jpg"
-              alt="Sheikh Zayed Grand Mosque Abu Dhabi"
+              src={sheikhZayedArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover object-center filter saturate-125"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-t from-[#0D1226] via-[#0D1226]/50 to-transparent" />
           </div>
@@ -470,9 +486,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           {/* Blue Mosque Ottoman Cascading Domes Artwork Backdrop */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-40">
             <img
-              src="/src/assets/images/blue_mosque_art_1792513374990.jpg"
-              alt="Sultan Ahmed Blue Mosque Istanbul"
+              src={blueMosqueArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover object-center filter saturate-130"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-t from-[#061530] via-[#061530]/60 to-transparent" />
           </div>
@@ -496,9 +514,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           {/* Baitul Mukarram National Mosque Artwork Backdrop */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-45">
             <img
-              src="/src/assets/images/baitul_mukarram_art_1792513393050.jpg"
-              alt="Baitul Mukarram National Mosque Dhaka"
+              src={baitulMukarramArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover object-center filter saturate-125"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
             <div className="absolute inset-0 bg-linear-to-t from-[#081C16] via-[#081C16]/60 to-transparent" />
           </div>
@@ -600,10 +620,11 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
 
           {/* Mosque Silhouette in center */}
           <img
-            src="/src/assets/images/islamic_hero_mosque_1790957336258.jpg"
-            alt="Islamic Mosque Silhouette"
-            referrerPolicy="no-referrer"
+            src={heroMosqueArt}
+            alt=""
+            role="presentation"
             className="absolute inset-0 w-full h-full object-cover opacity-[0.08] mix-blend-overlay pointer-events-none"
+            onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
           />
 
           {/* 8-Point Islamic Geometric Star Pattern - Top-Right */}

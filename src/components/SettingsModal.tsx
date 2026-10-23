@@ -461,6 +461,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 />
               </button>
             </div>
+
+            {/* Bottom Nav Bar Safe Clearance Selector */}
+            <div className="p-2.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE]/80 dark:border-[#1C2D5A] space-y-1.5">
+              <div>
+                <span className="font-bold text-[#10235A] dark:text-white block text-xs">
+                  নিচের নেভিগেশন বার ফাঁকা (Bottom Nav Clearance)
+                </span>
+                <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                  ফোনের ৩-বাটন বা জেসচার বারের জন্য স্বয়ংক্রিয় ফাঁকা মার্জিন
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5 pt-1">
+                {[
+                  { id: 'auto', labelBn: 'অটো', subBn: 'স্ক্রিন অনুযায়ী' },
+                  { id: 'standard', labelBn: 'সাধারণ', subBn: 'স্ট্যান্ডার্ড' },
+                  { id: 'extra', labelBn: 'অতিরিক্ত', subBn: '৩-বাটন নেভ' },
+                  { id: 'compact', labelBn: 'কমপ্যাক্ট', subBn: 'ছোট মার্জিন' },
+                ].map((opt) => {
+                  const isCur = (preferences.bottomNavSpacing || 'auto') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(10);
+                        onUpdatePreferences({ bottomNavSpacing: opt.id as any });
+                      }}
+                      className={`p-1.5 rounded-lg border text-center transition-all cursor-pointer ${
+                        isCur
+                          ? 'bg-[#0F5F62] text-white border-[#0F5F62] shadow-xs'
+                          : 'bg-[#F3FAF9] dark:bg-[#10235A] text-[#123234] dark:text-slate-300 border-[#E7D9DE] dark:border-[#1C2D5A]'
+                      }`}
+                    >
+                      <span className="text-[10px] font-bold block leading-tight">{opt.labelBn}</span>
+                      <span className={`text-[8px] block ${isCur ? 'text-teal-100' : 'text-slate-500'}`}>{opt.subBn}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* 3. USER PROFILE & GENDER */}

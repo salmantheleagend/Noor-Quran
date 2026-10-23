@@ -23,6 +23,7 @@ import { BottomNav, MainTabType } from './components/BottomNav';
 
 const MAIN_TABS: MainTabType[] = ['home', 'quran', 'prayer', 'search', 'more'];
 import { fetchSurahAyahs } from './data/quranData';
+import { getQuranLastRead } from './utils/quranTracker';
 import { HomeDashboard } from './components/HomeDashboard';
 import { QuranReader } from './components/QuranReader';
 import { GlobalSearch } from './components/GlobalSearch';
@@ -129,7 +130,14 @@ export default function App() {
 
   // Current view tab (Default opens on Home screen with Namazer Waqt mode as requested)
   const [currentTab, setCurrentTab] = useState<string>('home');
-  const [activeSurahToOpen, setActiveSurahToOpen] = useState<number | undefined>(1);
+  const [activeSurahToOpen, setActiveSurahToOpen] = useState<number | undefined>(() => {
+    const lr = getQuranLastRead();
+    return lr ? lr.surahNumber : 1;
+  });
+  const [targetAyahToScroll, setTargetAyahToScroll] = useState<number | undefined>(() => {
+    const lr = getQuranLastRead();
+    return lr ? lr.ayahNumber : undefined;
+  });
 
   // Modals & Screen States
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -338,8 +346,22 @@ export default function App() {
   const tabHistoryRef = useRef<string[]>(['home']);
 
   const handleNavigate = (tab: string, extra?: unknown, pushToBrowserHistory = true) => {
-    if (tab === 'quran' && typeof extra === 'number') {
-      setActiveSurahToOpen(extra);
+    if (tab === 'quran') {
+      if (typeof extra === 'number') {
+        setActiveSurahToOpen(extra);
+        setTargetAyahToScroll(undefined);
+      } else if (extra && typeof extra === 'object' && 'surah' in (extra as Record<string, unknown>)) {
+        const obj = extra as { surah: number; ayah?: number };
+        setActiveSurahToOpen(obj.surah);
+        setTargetAyahToScroll(obj.ayah);
+      } else if (!extra) {
+        // Tapping 'quran' from bottom nav or menu resumes from last read!
+        const lr = getQuranLastRead();
+        if (lr) {
+          setActiveSurahToOpen(lr.surahNumber);
+          setTargetAyahToScroll(lr.ayahNumber);
+        }
+      }
     }
     // Female-only access guard for Period Tracker
     if (tab === 'tracker' && preferences.gender !== 'female') {
@@ -528,7 +550,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3FAF9] dark:bg-[#0E1416] text-[#123234] dark:text-[#EAF2F1] flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-[100dvh] bg-[#F3FAF9] dark:bg-[#0E1416] text-[#123234] dark:text-[#EAF2F1] flex flex-col font-sans transition-colors duration-200">
       {/* Top Header */}
       <Header
         language={preferences.language}
@@ -546,7 +568,7 @@ export default function App() {
       <main
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="flex-1 w-full max-w-2xl mx-auto px-2 sm:px-3 pt-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+        className="flex-1 w-full max-w-2xl mx-auto px-2 sm:px-3 pt-1 pb-[calc(6.8rem+env(safe-area-inset-bottom,0px))]"
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -607,6 +629,7 @@ export default function App() {
                   handleUpdatePreferences({ selectedReciter: reciterId })
                 }
                 initialSurah={activeSurahToOpen}
+                initialAyah={targetAyahToScroll}
                 onOpenProfile={() => setIsSettingsModalOpen(true)}
               />
             )}
@@ -742,6 +765,7 @@ export default function App() {
         currentTab={currentTab}
         onChangeTab={(tab) => handleNavigate(tab)}
         language={preferences.language}
+        bottomNavSpacing={preferences.bottomNavSpacing}
       />
 
       {/* Location Picker Modal */}

@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { triggerHaptic } from '../utils/audioPlayer';
+import kaabaArt from '../assets/images/kaaba_makkah_art_1790957360864.jpg';
 
 interface QiblaCompassProps {
   language: AppLanguage;
@@ -293,10 +294,11 @@ export const QiblaCompass: React.FC<QiblaCompassProps> = ({
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl overflow-hidden border border-[#E9B7C3]/50 shrink-0 bg-[#0C152E]">
             <img
-              src="/src/assets/images/kaaba_makkah_art_1790957360864.jpg"
-              alt="Holy Kaaba Makkah"
-              referrerPolicy="no-referrer"
+              src={kaabaArt}
+              alt=""
+              role="presentation"
               className="w-full h-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }}
             />
           </div>
           <div>

@@ -209,4 +209,5 @@ export interface UserPreferences {
   mushafEdition?: string;
   highContrast?: boolean;
   largeFontMode?: boolean;
+  bottomNavSpacing?: 'auto' | 'compact' | 'standard' | 'extra';
 }
