@@ -814,6 +814,8 @@ export function normalizeArabicWithCompleteTashkeel(text: string): string {
   if (!text) return '';
 
   return text
+    // Strip tatweel/kashida (\u0640) that produces horizontal connecting bars or "---" between letters
+    .replace(/\u0640/g, '')
     // Replace archaic Quranic head of khah (\u06E1) with standard clean circular sukun (\u0652)
     .replace(/\u06E1/g, '\u0652')
     // Remove small low meem / iqlab markers (\u06ED) that distort tanween
@@ -822,6 +824,7 @@ export function normalizeArabicWithCompleteTashkeel(text: string): string {
     .replace(/([\u064B\u064C\u064D])\u06E2/g, '$1')
     // Normalize archaic small high madda to standard madda
     .replace(/\u06E4/g, '\u0653')
+    .replace(/[-_—–]+/g, ' ')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/\s+/g, ' ')
     .trim();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { AppLanguage } from '../types';
 import {
   CheckCircle2,
@@ -156,12 +156,25 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
     return today;
   });
 
+  const isInitialMount = useRef(true);
+  const isExternalSync = useRef(false);
+
   // Listen for external sync (e.g. from PrayerSchedule card)
   useEffect(() => {
     const handleSync = () => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY_NAMAZ_LOG);
-        if (saved) setLogs(JSON.parse(saved));
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setLogs((prev) => {
+            // Guard: If identical stringified content, preserve reference to avoid re-render loop
+            if (JSON.stringify(prev) === saved) {
+              return prev;
+            }
+            isExternalSync.current = true;
+            return parsed;
+          });
+        }
       } catch {
         // ignore
       }
@@ -174,8 +187,16 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
     };
   }, []);
 
-  // Save to localStorage
+  // Save to localStorage when modified locally
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (isExternalSync.current) {
+      isExternalSync.current = false;
+      return;
+    }
     try {
       localStorage.setItem(STORAGE_KEY_NAMAZ_LOG, JSON.stringify(logs));
       window.dispatchEvent(new Event('namaz_log_updated'));

@@ -11,7 +11,7 @@ import {
   applyAccessibleTajweed,
 } from '../utils/quranPageManager';
 import { MushafPageView, MushafEdition } from './MushafPageView';
-import { IndoPakKaraokeModal } from './IndoPakKaraokeModal';
+import { SurahNavigationSheet } from './SurahNavigationSheet';
 import {
   Search,
   BookOpen,
@@ -122,7 +122,6 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
   // Modals & Bottom Sheets
   const [showSurahModal, setShowSurahModal] = useState(initialSearchOpen);
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
-  const [surahSearchQuery, setSurahSearchQuery] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Reading Mode: 'study' vs 'mushaf'
@@ -228,7 +227,6 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
   });
 
   const [showStudyFontMenu, setShowStudyFontMenu] = useState<boolean>(false);
-  const [showIndoPakKaraoke, setShowIndoPakKaraoke] = useState<boolean>(false);
 
   // Auto-scroll to active playing Ayah in Study Mode
   useEffect(() => {
@@ -442,9 +440,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
     }
   };
 
-  useEffect(() => {
-    playAyahDirectRef.current = playAyahDirect;
-  });
+  playAyahDirectRef.current = playAyahDirect;
 
   // Advance to next ayah
   const handleAdvanceNextAyah = () => {
@@ -601,19 +597,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
     });
   };
 
-  // Filtered Surahs in Search Modal
-  const filteredSurahs = useMemo(() => {
-    if (!surahSearchQuery.trim()) return SURAH_LIST;
-    const q = surahSearchQuery.toLowerCase().trim();
-    return SURAH_LIST.filter(
-      (s) =>
-        s.number.toString() === q ||
-        s.nameBangla.toLowerCase().includes(q) ||
-        s.nameEnglish.toLowerCase().includes(q) ||
-        s.nameArabic.includes(q) ||
-        s.englishTranslation.toLowerCase().includes(q)
-    );
-  }, [surahSearchQuery]);
+
 
   const isSurahBookmarked = bookmarks.includes(activeSurah);
 
@@ -718,19 +702,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
               </button>
             )}
 
-            {/* Indo-Pak Word-by-Word Karaoke Mode Trigger */}
-            <button
-              onClick={() => {
-                triggerHaptic(20);
-                setShowIndoPakKaraoke(true);
-              }}
-              className="py-1.5 px-2.5 sm:px-3 rounded-2xl bg-linear-to-r from-[#D4AF37]/15 via-[#FAF4E6] to-[#D4AF37]/15 dark:from-[#D4AF37]/20 dark:via-[#162226] dark:to-[#D4AF37]/20 border border-[#D4AF37]/80 text-xs font-bold text-[#8C7335] dark:text-[#E6C65A] hover:bg-[#D4AF37]/25 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs min-h-[38px] shrink-0"
-              title="ইন্ডো-পাক স্ক্রিপ্ট ওয়ার্ড-বাই-ওয়ার্ড কারাওকে"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span className="hidden sm:inline">ইন্ডো-পাক কারাওকে</span>
-              <span className="sm:hidden">কারাওকে</span>
-            </button>
+
 
             <button
               onClick={() => {
@@ -1267,86 +1239,20 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
       )}
 
       {/* =========================================================================
-          SURAH SELECTOR MODAL
+          SURAH SELECTOR BOTTOM SHEET (Quran.com Style)
           ========================================================================= */}
-      {showSurahModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white dark:bg-[#10235A] rounded-3xl max-w-md w-full p-4 space-y-3 border border-[#E7D9DE] dark:border-[#21409A] shadow-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#E7D9DE] dark:border-[#21409A]/40 pb-2">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
-                <h3 className="text-sm font-bold text-[#10235A] dark:text-white">
-                  ১১৪ সূরা নির্বাচন করুন
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowSurahModal(false)}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1C2D5A]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={surahSearchQuery}
-                onChange={(e) => setSurahSearchQuery(e.target.value)}
-                placeholder="সূরার নাম বা নম্বর দিয়ে খুঁজুন..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0A163B] border border-[#E7D9DE] dark:border-[#21409A]/40 text-xs text-[#1F2937] dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#21409A]"
-              />
-            </div>
-
-            {/* Surah List */}
-            <div className="overflow-y-auto flex-1 space-y-1 pr-1 text-xs">
-              {filteredSurahs.map((surah) => {
-                const isSelected = surah.number === activeSurah;
-                return (
-                  <button
-                    key={surah.number}
-                    onClick={() => {
-                      triggerHaptic(15);
-                      setActiveSurah(surah.number);
-                      setCurrentMushafPage(surah.pageStart);
-                      setShowSurahModal(false);
-                    }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-xl transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-[#21409A] text-white font-bold shadow-xs'
-                        : 'hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] text-[#1F2937] dark:text-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] ${
-                          isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-[#0A163B] text-[#21409A] dark:text-[#E9B7C3]'
-                        }`}
-                      >
-                        {surah.number}
-                      </span>
-                      <div className="text-left font-bengali">
-                        <span className="font-bold">{surah.nameBangla}</span>
-                        <span className="text-[10px] ml-1.5 opacity-75">
-                          ({surah.revelationTypeBn} · {toBengaliNumber(surah.numberOfAyahs)} আয়াত)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="text-right" dir="rtl">
-                      <span className="font-arabic font-bold text-sm">{surah.nameArabic}</span>
-                      <span className="text-[10px] block opacity-75 font-mono">
-                        পৃষ্ঠা {toBengaliNumber(surah.pageStart)}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <SurahNavigationSheet
+        isOpen={showSurahModal}
+        onClose={() => setShowSurahModal(false)}
+        activeSurah={activeSurah}
+        onSelectSurah={(surahNumber, pageStart) => {
+          triggerHaptic(15);
+          setActiveSurah(surahNumber);
+          setCurrentMushafPage(pageStart);
+          setShowSurahModal(false);
+        }}
+        language={language}
+      />
 
       {/* =========================================================================
           READING SETTINGS BOTTOM SHEET
@@ -1542,12 +1448,6 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
         </div>
       )}
 
-      {/* Indo-Pak Word-by-Word Interactive Karaoke Modal */}
-      <IndoPakKaraokeModal
-        isOpen={showIndoPakKaraoke}
-        onClose={() => setShowIndoPakKaraoke(false)}
-        language={language === 'en' ? 'en' : 'bn'}
-      />
     </div>
   );
 };

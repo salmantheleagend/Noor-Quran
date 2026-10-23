@@ -253,29 +253,21 @@
 .dark .tajweed-waqf,
 .dark .tajweed-iqlab { color: #9E9E9E; }
 
-/* Color-Blind Tajwid Accessibility Mode (distinguished by underline patterns & symbols) */
+/* Quran.com Standard Tajweed Styling - Zero Underlines, Pure Clear Text */
 .tajweed-colorblind .tajweed-ghunnah {
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-decoration-thickness: 2px;
+  font-weight: 700;
 }
 .tajweed-colorblind .tajweed-qalqalah {
-  text-decoration: underline;
-  text-decoration-style: double;
-  text-decoration-thickness: 2px;
+  font-weight: 700;
 }
 .tajweed-colorblind .tajweed-idgham {
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  text-decoration-thickness: 2px;
+  font-weight: 600;
 }
 .tajweed-colorblind .tajweed-ikhfa {
-  border-bottom: 2px dashed currentColor;
+  font-weight: 600;
 }
 .tajweed-colorblind .tajweed-madd {
-  text-decoration: underline;
-  text-decoration-style: wavy;
-  text-decoration-thickness: 2px;
+  font-weight: 700;
 }
 .tajweed-colorblind .tajweed-silent,
 .tajweed-colorblind .tajweed-waqf {

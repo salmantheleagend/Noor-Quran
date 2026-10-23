@@ -5,7 +5,9 @@ import {
   MushafPageAyah,
   toBengaliNumber,
   JUZ_LIST,
+  getJuzForPage,
   applyAccessibleTajweed,
+  fetchMushafPage,
 } from '../utils/quranPageManager';
 import { stripBismillahPrefix, normalizeQuranArabic, SURAH_LIST } from '../data/quranData';
 import { ArabicFontFamily, AppLanguage } from '../types';
@@ -13,6 +15,8 @@ import { triggerHaptic } from '../utils/audioPlayer';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Bookmark,
   Share2,
   X,
@@ -27,6 +31,8 @@ import {
   Search,
   AlertCircle,
   Volume2,
+  ScrollText,
+  BookOpen,
 } from 'lucide-react';
 
 export type MushafEdition = 'standard' | 'tajweed' | 'hafezi_15' | 'nurani_easy';
@@ -102,7 +108,22 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
   const [jumpModalTab, setJumpModalTab] = useState<'none' | 'page' | 'juz' | 'surah'>('none');
   const [pageInputVal, setPageInputVal] = useState<string>(currentPageNumber.toString());
 
-  // Touch swipe tracking
+  // Scroll Mode: 'continuous' (Continuous vertical scroll - Quran.com style) vs 'paginated' (Single page flip)
+  const [scrollMode, setScrollMode] = useState<'continuous' | 'paginated'>(() => {
+    try {
+      return (localStorage.getItem('noor_quran_mushaf_scroll_mode') as 'continuous' | 'paginated') || 'continuous';
+    } catch {
+      return 'continuous';
+    }
+  });
+
+  // Continuous pages cache and loading states
+  const [continuousPages, setContinuousPages] = useState<MushafPageData[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [visiblePage, setVisiblePage] = useState<number>(currentPageNumber);
+  const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Touch swipe tracking (for paginated mode)
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
 
@@ -111,18 +132,166 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
     return language === 'bn' ? toBengaliNumber(num) : num.toString();
   };
 
-  // Sync page input when page changes
+  // Sync page input & visiblePage when currentPageNumber changes
   useEffect(() => {
     setPageInputVal(currentPageNumber.toString());
+    setVisiblePage(currentPageNumber);
   }, [currentPageNumber]);
 
-  // Handle Touch Swipe
+  // Sync continuousPages when pageData or currentPageNumber changes
+  useEffect(() => {
+    if (!pageData) return;
+
+    if (scrollMode === 'continuous') {
+      setContinuousPages((prev) => {
+        const exists = prev.some((p) => p.pageNumber === pageData.pageNumber);
+        if (exists) {
+          return prev;
+        }
+
+        // If target page is not in loaded array, initialize with this page and pre-load next page
+        const initial = [pageData];
+        if (pageData.pageNumber < totalPages) {
+          fetchMushafPage(pageData.pageNumber + 1)
+            .then((nextP) => {
+              if (!nextP) return;
+              setContinuousPages((curr) => {
+                if (curr.some((p) => p.pageNumber === nextP.pageNumber)) return curr;
+                return [...curr, nextP].sort((a, b) => a.pageNumber - b.pageNumber);
+              });
+            })
+            .catch(() => {});
+        }
+        return initial;
+      });
+    }
+  }, [pageData, scrollMode, totalPages]);
+
+  // Load next page in continuous mode
+  const handleLoadNextPage = () => {
+    if (isLoadingMore || continuousPages.length === 0) return;
+    const lastPage = continuousPages[continuousPages.length - 1].pageNumber;
+    if (lastPage >= totalPages) return;
+
+    setIsLoadingMore(true);
+    fetchMushafPage(lastPage + 1)
+      .then((newPage) => {
+        if (newPage) {
+          setContinuousPages((prev) => {
+            if (prev.some((p) => p.pageNumber === newPage.pageNumber)) return prev;
+            return [...prev, newPage];
+          });
+        }
+        setIsLoadingMore(false);
+      })
+      .catch(() => {
+        setIsLoadingMore(false);
+      });
+  };
+
+  // Load previous page in continuous mode
+  const handleLoadPrevPage = () => {
+    if (isLoadingMore || continuousPages.length === 0) return;
+    const firstPage = continuousPages[0].pageNumber;
+    if (firstPage <= 1) return;
+
+    setIsLoadingMore(true);
+    fetchMushafPage(firstPage - 1)
+      .then((prevPage) => {
+        if (prevPage) {
+          setContinuousPages((prev) => {
+            if (prev.some((p) => p.pageNumber === prevPage.pageNumber)) return prev;
+            return [prevPage, ...prev];
+          });
+        }
+        setIsLoadingMore(false);
+      })
+      .catch(() => {
+        setIsLoadingMore(false);
+      });
+  };
+
+  // Toggle Scroll Mode (Continuous vs Paginated)
+  const handleToggleScrollMode = (mode: 'continuous' | 'paginated') => {
+    triggerHaptic(15);
+    setScrollMode(mode);
+    try {
+      localStorage.setItem('noor_quran_mushaf_scroll_mode', mode);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Bottom Sentinel Observer to auto-load next page as user scrolls down
+  useEffect(() => {
+    if (scrollMode !== 'continuous' || isLoadingMore) return;
+    const sentinel = bottomSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadNextPage();
+        }
+      },
+      {
+        rootMargin: '600px 0px 600px 0px',
+        threshold: 0.05,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [scrollMode, continuousPages, isLoadingMore]);
+
+  // Active page detection as user scrolls in continuous mode
+  useEffect(() => {
+    if (scrollMode !== 'continuous' || continuousPages.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
+            const num = parseInt(entry.target.id.replace('mushaf-page-', ''), 10);
+            if (!isNaN(num)) {
+              setVisiblePage((prev) => {
+                if (prev !== num) {
+                  try {
+                    localStorage.setItem('noor_quran_last_mushaf_page', num.toString());
+                  } catch {
+                    // ignore
+                  }
+                  return num;
+                }
+                return prev;
+              });
+            }
+          }
+        });
+      },
+      {
+        threshold: [0.3, 0.6],
+        rootMargin: '-60px 0px -60px 0px',
+      }
+    );
+
+    continuousPages.forEach((p) => {
+      const el = document.getElementById(`mushaf-page-${p.pageNumber}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [scrollMode, continuousPages]);
+
+  // Handle Touch Swipe (Paginated mode)
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (scrollMode !== 'paginated') return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (scrollMode !== 'paginated') return;
     if (touchStartXRef.current === null || touchStartYRef.current === null) return;
     const diffX = e.changedTouches[0].clientX - touchStartXRef.current;
     const diffY = e.changedTouches[0].clientY - touchStartYRef.current;
@@ -196,6 +365,351 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
 
   const editionTypo = getEditionTypography();
 
+  // Helper to render an individual Mushaf Page Card (used in both continuous scroll and paginated flip)
+  const renderSingleMushafPage = (pData: MushafPageData, isPaginatedView: boolean) => {
+    const pNum = pData.pageNumber;
+    const jNum = pData.juzNumber || getJuzForPage(pNum);
+    const surahMeta = pData.surahs[0];
+
+    return (
+      <div
+        key={`mushaf-page-card-${pNum}`}
+        id={`mushaf-page-${pNum}`}
+        className="relative w-full max-w-[700px] px-2 sm:px-4 cursor-pointer scroll-mt-16"
+        onClick={() => {
+          onToggleDistractionFree();
+        }}
+      >
+        {/* Outer Frame & Paper Canvas */}
+        <div
+          className={`relative rounded-3xl transition-all duration-300 shadow-md ${
+            colorBlindMode ? 'tajweed-colorblind' : ''
+          }`}
+          style={{
+            backgroundColor: 'var(--mushaf-paper-bg, #FAF6EB)',
+          }}
+        >
+          {/* Inner Golden Margin */}
+          <div className="p-3 sm:p-5 m-1 rounded-[22px] border-2 border-[#D7E9E7] dark:border-[#21409A]/50 bg-[#FAF6EB] dark:bg-[#0B1536] text-[#1F2937] dark:text-[#F8E8ED]">
+            {/* Inner Thin Border Box */}
+            <div className="p-3 sm:p-4 rounded-xl border border-[#E7D9DE] dark:border-[#21409A]/40 min-h-[520px] flex flex-col justify-between">
+              <div>
+                {/* PAGE TOP MARGIN */}
+                <div className="pb-2 mb-2 border-b border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#10235A] dark:text-[#E9B7C3]">
+                  {/* Left: Juz Number */}
+                  <div className="font-semibold flex items-center gap-1">
+                    <span>
+                      {language === 'bn' ? `পারা ${formatNum(jNum)}` : `Juz ${formatNum(jNum)}`}
+                    </span>
+                    <span className="text-muted-slate text-[10px]">
+                      ({mushafEdition === 'hafezi_15' && (language === 'bn' ? '১৫ লাইন হাফেজি' : '15-Line Hafezi')}
+                      {mushafEdition === 'tajweed' && (language === 'bn' ? 'কালার তাজবীদ' : 'Tajweed Color')}
+                      {mushafEdition === 'nurani_easy' && (language === 'bn' ? 'নূরানী সহজ পাঠ' : 'Nurani Script')}
+                      {mushafEdition === 'standard' && (language === 'bn' ? 'মদিনা উসমানি' : 'Madani Uthmani')})
+                    </span>
+                  </div>
+
+                  {/* Right: Surah Name */}
+                  <div className="font-semibold">
+                    {surahMeta
+                      ? (language === 'bn'
+                          ? `সূরা ${surahMeta.nameBangla}`
+                          : `Surah ${SURAH_LIST[surahMeta.number - 1]?.nameEnglish || surahMeta.nameBangla}`)
+                      : (language === 'bn' ? 'পবিত্র কুরআন' : 'Holy Quran')}
+                  </div>
+                </div>
+
+                {/* PAGE CORE CONTENT */}
+                {pData.ayahs && pData.ayahs.length > 0 ? (
+                  <div className="space-y-4 pt-1">
+                    {/* Render each Surah that appears on this page */}
+                    {(() => {
+                      const sections: { surahNumber: number; ayahs: MushafPageAyah[]; startsOnPage: boolean }[] = [];
+                      pData.ayahs.forEach((ayah) => {
+                        const lastSec = sections[sections.length - 1];
+                        if (lastSec && lastSec.surahNumber === ayah.surahNumber) {
+                          lastSec.ayahs.push(ayah);
+                          if (ayah.numberInSurah === 1) lastSec.startsOnPage = true;
+                        } else {
+                          sections.push({
+                            surahNumber: ayah.surahNumber,
+                            ayahs: [ayah],
+                            startsOnPage: ayah.numberInSurah === 1,
+                          });
+                        }
+                      });
+
+                      return sections.map((sec) => {
+                        const sMeta = SURAH_LIST.find((s) => s.number === sec.surahNumber);
+                        const surahNameAr = sec.ayahs[0]?.surahNameArabic || sMeta?.nameArabic || '';
+                        const surahNameBn = sec.ayahs[0]?.surahNameBangla || sMeta?.nameBangla || '';
+                        const isSurahStart = sec.startsOnPage;
+
+                        const displayAyahs = sec.surahNumber === 1
+                          ? sec.ayahs.filter((a) => a.numberInSurah !== 1)
+                          : sec.ayahs;
+
+                        return (
+                          <div key={`surah-section-${pNum}-${sec.surahNumber}`} className="space-y-3 mb-4">
+                            {/* Surah Header & Separate Bismillah (rendered if Surah begins on this page) */}
+                            {isSurahStart && (
+                              <div className="space-y-2.5 my-3">
+                                {/* 1. Ornate Surah Title Banner */}
+                                <div className="py-2.5 px-4 rounded-2xl bg-linear-to-r from-[#F8E8ED]/90 via-[#F3FAF9] to-[#F8E8ED]/90 dark:from-[#10235A]/80 dark:via-[#0E172E] dark:to-[#10235A]/80 border-2 border-[#E7D9DE] dark:border-[#21409A]/50 text-center shadow-xs">
+                                  <div className="flex items-center justify-between max-w-md mx-auto">
+                                    <span className="text-[11px] sm:text-xs font-bold text-[#21409A] dark:text-[#E9B7C3]">
+                                      {sMeta?.revelationTypeBn || (sMeta?.revelationType === 'Meccan' ? 'মাক্কী' : 'মাদানী')} · {sMeta?.numberOfAyahs || sec.ayahs.length} আয়াত
+                                    </span>
+                                    <span className="text-base sm:text-lg font-bold text-[#10235A] dark:text-white font-arabic">
+                                      سُورَةُ {surahNameAr}
+                                    </span>
+                                    <span className="text-[11px] sm:text-xs font-semibold text-[#10235A] dark:text-[#E9B7C3]">
+                                      {language === 'bn' ? `সূরা ${surahNameBn}` : `Surah ${sMeta?.nameEnglish || surahNameBn}`}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* 2. DEDICATED SEPARATE BISMILLAH BANNER */}
+                                {sec.surahNumber !== 9 ? (
+                                  <div className="py-3 px-4 rounded-2xl bg-white dark:bg-[#10235A]/60 border border-[#E7D9DE] dark:border-[#21409A]/40 text-center shadow-2xs group relative">
+                                    <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs text-[#21409A] dark:text-[#E9B7C3] font-bold mb-1">
+                                      <span className="w-10 sm:w-16 h-px bg-linear-to-r from-transparent to-[#21409A]/50 dark:to-[#E9B7C3]/50" />
+                                      <span className="px-2.5 py-0.5 rounded-full bg-[#F8E8ED] dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A]/50 font-bold">
+                                        {language === 'bn' ? 'বিসমিল্লাহির রাহমানির রাহিম' : 'In the Name of Allah'}
+                                      </span>
+                                      <span className="w-10 sm:w-16 h-px bg-linear-to-l from-transparent to-[#21409A]/50 dark:to-[#E9B7C3]/50" />
+                                    </div>
+
+                                    <p
+                                      className="text-2xl sm:text-3xl font-bold text-[#10235A] dark:text-white font-arabic tracking-normal select-text leading-loose py-1"
+                                      style={{ fontFamily: getArabicFontFamily() }}
+                                      dir="rtl"
+                                    >
+                                      بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                                    </p>
+
+                                    {/* Translation & Dedicated Bismillah Audio Recitation */}
+                                    <div className="pt-1.5 mt-1 border-t border-[#E7D9DE]/60 dark:border-[#21409A]/30 flex flex-wrap items-center justify-center gap-3 text-xs text-[#21409A] dark:text-[#E9B7C3]">
+                                      <span className="text-[11px] text-slate-600 dark:text-slate-300 font-bengali">
+                                        {language === 'bn' ? 'পরম করুণাময়, অতি দয়ালু আল্লাহর নামে শুরু করছি।' : 'In the name of Allah, the Entirely Merciful, the Especially Merciful.'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          triggerHaptic(15);
+                                          onPlayAyah({ surahNumber: 1, numberInSurah: 1 } as any);
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F8E8ED] dark:bg-[#10235A] hover:bg-[#E9B7C3]/30 text-[#10235A] dark:text-[#E9B7C3] font-semibold cursor-pointer transition-colors shadow-2xs"
+                                        title={language === 'bn' ? 'বিসমিল্লাহ্ তেলাওয়াত শুনুন' : 'Listen Bismillah'}
+                                      >
+                                        <Volume2 className="w-3 h-3" />
+                                        <span>{language === 'bn' ? 'তেলাওয়াত' : 'Recite'}</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="my-2 py-2 px-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-center">
+                                    <p className="text-[11px] text-amber-800 dark:text-amber-200 font-medium">
+                                      {language === 'bn'
+                                        ? 'কুরআনিক বিধান অনুযায়ী সূরা আত-তাওবাহ্-এর শুরুতে বিসমিল্লাহ্ পাঠ করা হয় না।'
+                                        : 'By Quranic consensus, Bismillah is not recited at the beginning of Surah At-Tawbah.'}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Continuous Sacred Arabic Ayahs Flow */}
+                            <div
+                              className="text-justify leading-loose font-arabic select-text font-semibold"
+                              dir="rtl"
+                              style={{
+                                fontFamily: getArabicFontFamily(),
+                                fontSize: editionTypo.fontSize,
+                                lineHeight: editionTypo.lineHeight,
+                                letterSpacing: editionTypo.letterSpacing,
+                                textAlignLast: 'center',
+                              }}
+                            >
+                              {displayAyahs.map((ayah) => {
+                                const ayahKey = `${ayah.surahNumber}_${ayah.numberInSurah}`;
+                                const isPlayingThis = playingAyahKey === ayahKey && isPlaying;
+
+                                return (
+                                  <span
+                                    key={ayahKey}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      triggerHaptic(15);
+                                      setSelectedAyahForMeaning(ayah);
+                                    }}
+                                    className={`inline transition-all duration-200 rounded-md cursor-pointer ${
+                                      isPlayingThis
+                                        ? 'bg-[#0F5F62]/15 dark:bg-[#B9E2DD]/20 text-[#0F5F62] dark:text-[#E6F3F2] px-1 py-0.5 rounded-lg shadow-xs ring-1 ring-[#0F5F62]/30'
+                                        : 'hover:bg-[#F8E8ED]/50 dark:hover:bg-[#10235A]/40'
+                                    }`}
+                                    title={language === 'bn' ? `আয়াত ${ayah.numberInSurah} (অর্থ দেখতে ট্যাপ করুন)` : `Verse ${ayah.numberInSurah} (Tap for translation)`}
+                                  >
+                                    {(() => {
+                                      let textAr = normalizeQuranArabic(stripBismillahPrefix(ayah.textArabic));
+                                      if (/^[\s\uFEFF\u200B\u200C]*بِ?سْ?مِ?/u.test(textAr)) {
+                                        textAr = normalizeQuranArabic(stripBismillahPrefix(textAr));
+                                      }
+                                      const tajweedAr = showTajweed ? applyAccessibleTajweed(textAr) : undefined;
+
+                                      if (showTajweed && tajweedAr) {
+                                        return (
+                                          <span
+                                            className="inline tajweed-container select-text font-semibold"
+                                            dangerouslySetInnerHTML={{
+                                              __html: tajweedAr,
+                                            }}
+                                          />
+                                        );
+                                      }
+                                      return <span className="inline select-text font-semibold">{textAr}</span>;
+                                    })()}
+
+                                    {/* Circular Ayah End Mark with Number */}
+                                    <span
+                                      className="inline-flex items-center justify-center mx-1.5 align-middle select-none"
+                                      dir="ltr"
+                                    >
+                                      <span
+                                        className="relative inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 text-[11px] sm:text-xs font-semibold rounded-full border border-[#21409A]/60 dark:border-[#E9B7C3]/70 bg-white/70 dark:bg-[#10235A]/70 select-none shadow-2xs cursor-pointer hover:scale-110 transition-transform"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          triggerHaptic(20);
+                                          setSelectedAyahForMeaning(ayah);
+                                        }}
+                                      >
+                                        {formatNum(ayah.numberInSurah)}
+                                      </span>
+                                    </span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                ) : (
+                  <div className="py-16 px-4 text-center space-y-3.5 my-auto">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-xs">
+                      <AlertCircle className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-[#10235A] dark:text-white">
+                        {language === 'bn'
+                          ? `পৃষ্ঠা ${formatNum(pNum)}-এর তথ্য লোড করা সম্ভব হয়নি`
+                          : `Could not load page ${formatNum(pNum)}`}
+                      </h4>
+                      <p className="text-xs text-[#6B7280] dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                        {language === 'bn'
+                          ? 'ইন্টারনেট সংযোগ নিশ্চিত করে পুনরায় চেষ্টা করুন।'
+                          : 'Please ensure your internet connection is active and retry.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* PAGE BOTTOM MARGIN */}
+              <div className="pt-2 mt-2 border-t border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#10235A] dark:text-[#E9B7C3]">
+                {isPaginatedView ? (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrev();
+                      }}
+                      disabled={pNum <= 1}
+                      className="p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center gap-1 cursor-pointer font-semibold"
+                      title={language === 'bn' ? 'পূর্ববর্তী পৃষ্ঠা' : 'Previous Page'}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                      <span className="hidden sm:inline">{language === 'bn' ? 'পূর্ববর্তী' : 'Previous'}</span>
+                    </button>
+
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setJumpModalTab('page');
+                      }}
+                      className="px-3 py-1 rounded-full bg-white/80 dark:bg-[#10235A]/80 border border-[#E7D9DE] dark:border-[#21409A]/40 font-mono font-bold cursor-pointer hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] transition-colors shadow-2xs flex items-center gap-1.5"
+                      title={language === 'bn' ? 'পৃষ্ঠা পরিবর্তন করুন' : 'Change Page'}
+                    >
+                      <span>{language === 'bn' ? 'পৃষ্ঠা' : 'Page'}</span>
+                      <span className="text-[#21409A] dark:text-[#E9B7C3]">
+                        {formatNum(pNum)}
+                      </span>
+                      <span className="text-[#E7D9DE]">/</span>
+                      <span className="text-muted-slate">{formatNum(totalPages)}</span>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNext();
+                      }}
+                      disabled={pNum >= totalPages}
+                      className="p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center gap-1 cursor-pointer font-semibold"
+                      title={language === 'bn' ? 'পরবর্তী পৃষ্ঠা' : 'Next Page'}
+                    >
+                      <span className="hidden sm:inline">{language === 'bn' ? 'পরবর্তী' : 'Next'}</span>
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-semibold text-[11px] opacity-75">
+                      {surahMeta ? (language === 'bn' ? `সূরা ${surahMeta.nameBangla}` : `Surah ${surahMeta.nameBangla}`) : ''}
+                    </div>
+
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setJumpModalTab('page');
+                      }}
+                      className="px-3.5 py-1 rounded-full bg-white/80 dark:bg-[#10235A]/80 border border-[#E7D9DE] dark:border-[#21409A]/40 font-mono font-bold cursor-pointer hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] transition-colors shadow-2xs flex items-center gap-1.5"
+                      title={language === 'bn' ? 'পৃষ্ঠা নির্বাচন' : 'Select Page'}
+                    >
+                      <span>{language === 'bn' ? 'পৃষ্ঠা' : 'Page'}</span>
+                      <span className="text-[#21409A] dark:text-[#E9B7C3]">
+                        {formatNum(pNum)}
+                      </span>
+                      <span className="text-[#E7D9DE]">/</span>
+                      <span className="text-muted-slate">{formatNum(totalPages)}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerHaptic(15);
+                        if (pData.ayahs && pData.ayahs[0]) {
+                          onPlayAyah(pData.ayahs[0]);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] transition-colors font-semibold cursor-pointer"
+                      title={language === 'bn' ? 'এই পৃষ্ঠা শুনুন' : 'Play this page'}
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span className="text-[11px]">{language === 'bn' ? 'শুনুন' : 'Play'}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       className={`relative w-full flex flex-col items-center select-none transition-all duration-200 ${
@@ -225,7 +739,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                   title={language === 'bn' ? 'পৃষ্ঠা নির্বাচন' : 'Select Page'}
                 >
                   <Search className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
-                  <span>{language === 'bn' ? `পৃষ্ঠা ${formatNum(currentPageNumber)}` : `Page ${formatNum(currentPageNumber)}`}</span>
+                  <span>{language === 'bn' ? `পৃষ্ঠা ${formatNum(visiblePage)}` : `Page ${formatNum(visiblePage)}`}</span>
                 </button>
 
                 <button
@@ -233,16 +747,37 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                   className="px-2.5 py-1.5 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] transition-colors cursor-pointer"
                   title={language === 'bn' ? 'পারা নির্বাচন' : 'Select Juz'}
                 >
-                  {language === 'bn' ? `পারা ${formatNum(pageData?.juzNumber || 1)}` : `Juz ${formatNum(pageData?.juzNumber || 1)}`}
+                  {language === 'bn' ? `পারা ${formatNum(getJuzForPage(visiblePage))}` : `Juz ${formatNum(getJuzForPage(visiblePage))}`}
                 </button>
 
-                <button
-                  onClick={() => setJumpModalTab('surah')}
-                  className="hidden sm:inline-flex px-2.5 py-1.5 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] transition-colors cursor-pointer"
-                  title={language === 'bn' ? 'সূরা নির্বাচন' : 'Surah List'}
-                >
-                  {language === 'bn' ? 'সূরা তালিকা' : 'Surahs'}
-                </button>
+                {/* Scroll System Switcher: Continuous Scroll vs Paginated Single Page */}
+                <div className="flex items-center p-0.5 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A]/40 text-xs ml-1">
+                  <button
+                    onClick={() => handleToggleScrollMode('continuous')}
+                    className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      scrollMode === 'continuous'
+                        ? 'bg-[#21409A] text-white shadow-2xs'
+                        : 'text-[#10235A] dark:text-[#E9B7C3] hover:text-[#21409A]'
+                    }`}
+                    title={language === 'bn' ? 'ধারাবাহিক স্ক্রোল মোড (Quran.com স্টাইল)' : 'Continuous Scroll Mode'}
+                  >
+                    <ScrollText className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">{language === 'bn' ? 'স্ক্রোল' : 'Scroll'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleToggleScrollMode('paginated')}
+                    className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                      scrollMode === 'paginated'
+                        ? 'bg-[#21409A] text-white shadow-2xs'
+                        : 'text-[#10235A] dark:text-[#E9B7C3] hover:text-[#21409A]'
+                    }`}
+                    title={language === 'bn' ? 'একক পৃষ্ঠা মোড (পাতা উল্টানো)' : 'Single Page Flip'}
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">{language === 'bn' ? 'পাতা' : 'Page'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* Center/Right Controls */}
@@ -348,360 +883,129 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
           - Warm ivory/cream paper background
           - Clean traditional frame in Royal Sapphire & Rose Quartz
           ========================================================================= */}
-      <div
-        className="relative w-full max-w-[700px] px-2 sm:px-4 cursor-pointer"
-        onClick={() => {
-          onToggleDistractionFree();
-        }}
-      >
-        {/* Outer Frame & Paper Canvas */}
-        <div
-          className={`relative rounded-3xl transition-all duration-300 shadow-md ${
-            colorBlindMode ? 'tajweed-colorblind' : ''
-          }`}
-          style={{
-            backgroundColor: 'var(--mushaf-paper-bg, #FAF6EB)',
-          }}
-        >
-          {/* Inner Golden Margin */}
-          <div className="p-3 sm:p-5 m-1 rounded-[22px] border-2 border-[#D7E9E7] dark:border-[#21409A]/50 bg-[#FAF6EB] dark:bg-[#0B1536] text-[#1F2937] dark:text-[#F8E8ED]">
-            {/* Inner Thin Border Box */}
-            <div className="p-3 sm:p-4 rounded-xl border border-[#E7D9DE] dark:border-[#21409A]/40 min-h-[520px] flex flex-col justify-between">
-              <div>
-                {/* ---------------------------------------------------------------
-                    PAGE TOP MARGIN: Juz Name (Left) | Edition / Surah (Right)
-                    --------------------------------------------------------------- */}
-                <div className="pb-2 mb-2 border-b border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#10235A] dark:text-[#E9B7C3]">
-                  {/* Left: Juz Number */}
-                  <div className="font-semibold flex items-center gap-1">
-                    <span>
-                      {language === 'bn'
-                        ? `পারা ${formatNum(pageData?.juzNumber || 1)}`
-                        : `Juz ${formatNum(pageData?.juzNumber || 1)}`}
-                    </span>
-                    <span className="text-muted-slate text-[10px]">
-                      ({mushafEdition === 'hafezi_15' && (language === 'bn' ? '১৫ লাইন হাফেজি' : '15-Line Hafezi')}
-                      {mushafEdition === 'tajweed' && (language === 'bn' ? 'কালার তাজবীদ' : 'Tajweed Color')}
-                      {mushafEdition === 'nurani_easy' && (language === 'bn' ? 'নূরানী সহজ পাঠ' : 'Nurani Script')}
-                      {mushafEdition === 'standard' && (language === 'bn' ? 'মদিনা উসমানি' : 'Madani Uthmani')})
-                    </span>
-                  </div>
-
-                  {/* Right: Surah Name */}
-                  <div className="font-semibold">
-                    {pageData?.surahs[0]
-                      ? (language === 'bn'
-                          ? `সূরা ${pageData.surahs[0].nameBangla}`
-                          : `Surah ${SURAH_LIST[pageData.surahs[0].number - 1]?.nameEnglish || pageData.surahs[0].nameBangla}`)
-                      : (language === 'bn' ? 'পবিত্র কুরআন' : 'Holy Quran')}
-                  </div>
-                </div>
-
-                {/* ---------------------------------------------------------------
-                    PAGE CORE CONTENT: Surah Titles, Bismillah, & Ayahs Flow
-                    --------------------------------------------------------------- */}
-                {loading ? (
-                  <div className="py-24 text-center space-y-3">
-                    <div className="w-8 h-8 rounded-full border-2 border-[#21409A] border-t-transparent animate-spin mx-auto" />
-                    <p className="text-xs text-muted-slate">
-                      {language === 'bn' ? 'পবিত্র কুরআনের পৃষ্ঠা লোড হচ্ছে...' : 'Loading sacred Quran page...'}
-                    </p>
-                  </div>
-                ) : pageData && pageData.ayahs && pageData.ayahs.length > 0 ? (
-                  <div className="space-y-4 pt-1">
-                    {/* Render each Surah that appears on this page */}
-                    {(() => {
-                      // Group ayahs by consecutive surahNumber
-                      const sections: { surahNumber: number; ayahs: MushafPageAyah[]; startsOnPage: boolean }[] = [];
-                      pageData.ayahs.forEach((ayah) => {
-                        const lastSec = sections[sections.length - 1];
-                        if (lastSec && lastSec.surahNumber === ayah.surahNumber) {
-                          lastSec.ayahs.push(ayah);
-                          if (ayah.numberInSurah === 1) lastSec.startsOnPage = true;
-                        } else {
-                          sections.push({
-                            surahNumber: ayah.surahNumber,
-                            ayahs: [ayah],
-                            startsOnPage: ayah.numberInSurah === 1,
-                          });
-                        }
-                      });
-
-                      return sections.map((sec) => {
-                        const sMeta = SURAH_LIST.find((s) => s.number === sec.surahNumber);
-                        const surahNameAr = sec.ayahs[0]?.surahNameArabic || sMeta?.nameArabic || '';
-                        const surahNameBn = sec.ayahs[0]?.surahNameBangla || sMeta?.nameBangla || '';
-                        const isSurahStart = sec.startsOnPage;
-
-                        // For Surah 1 (Al-Fatihah), Bismillah is presented in the separate calligraphic header banner above.
-                        // To satisfy "mushaf e bismillah separate vabe diben..ayat er sathe na", do not duplicate Ayah 1 inside the continuous text flow!
-                        const displayAyahs = sec.surahNumber === 1
-                          ? sec.ayahs.filter((a) => a.numberInSurah !== 1)
-                          : sec.ayahs;
-
-                        return (
-                          <div key={`surah-section-${sec.surahNumber}`} className="space-y-3 mb-4">
-                            {/* Surah Header & Separate Bismillah (rendered if Surah begins on this page) */}
-                            {isSurahStart && (
-                              <div className="space-y-2.5 my-3">
-                                {/* 1. Ornate Surah Title Banner */}
-                                <div className="py-2.5 px-4 rounded-2xl bg-linear-to-r from-[#F8E8ED]/90 via-[#F3FAF9] to-[#F8E8ED]/90 dark:from-[#10235A]/80 dark:via-[#0E172E] dark:to-[#10235A]/80 border-2 border-[#E7D9DE] dark:border-[#21409A]/50 text-center shadow-xs">
-                                  <div className="flex items-center justify-between max-w-md mx-auto">
-                                    <span className="text-[11px] sm:text-xs font-bold text-[#21409A] dark:text-[#E9B7C3]">
-                                      {sMeta?.revelationTypeBn || (sMeta?.revelationType === 'Meccan' ? 'মাক্কী' : 'মাদানী')} · {sMeta?.numberOfAyahs || sec.ayahs.length} আয়াত
-                                    </span>
-                                    <span className="text-base sm:text-lg font-bold text-[#10235A] dark:text-white font-arabic">
-                                      سُورَةُ {surahNameAr}
-                                    </span>
-                                    <span className="text-[11px] sm:text-xs font-semibold text-[#10235A] dark:text-[#E9B7C3]">
-                                      {language === 'bn' ? `সূরা ${surahNameBn}` : `Surah ${sMeta?.nameEnglish || surahNameBn}`}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* 2. DEDICATED SEPARATE BISMILLAH BANNER (For all Surahs except Surah 9 At-Tawbah) */}
-                                {sec.surahNumber !== 9 ? (
-                                  <div className="py-3 px-4 rounded-2xl bg-white dark:bg-[#10235A]/60 border border-[#E7D9DE] dark:border-[#21409A]/40 text-center shadow-2xs group relative">
-                                    <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs text-[#21409A] dark:text-[#E9B7C3] font-bold mb-1">
-                                      <span className="w-10 sm:w-16 h-px bg-linear-to-r from-transparent to-[#21409A]/50 dark:to-[#E9B7C3]/50" />
-                                      <span className="px-2.5 py-0.5 rounded-full bg-[#F8E8ED] dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A]/50 font-bold">
-                                        {language === 'bn' ? 'বিসমিল্লাহির রাহমানির রাহিম' : 'In the Name of Allah'}
-                                      </span>
-                                      <span className="w-10 sm:w-16 h-px bg-linear-to-l from-transparent to-[#21409A]/50 dark:to-[#E9B7C3]/50" />
-                                    </div>
-
-                                    {/* Crystal-clear verified Uthmani script with distinct Zabar, Jer, and Pesh */}
-                                    <p
-                                      className="text-2xl sm:text-3xl font-bold text-[#10235A] dark:text-white font-arabic tracking-normal select-text leading-loose py-1"
-                                      style={{ fontFamily: getArabicFontFamily() }}
-                                      dir="rtl"
-                                    >
-                                      بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                                    </p>
-
-                                    {/* Translation & Dedicated Bismillah Audio Recitation */}
-                                    <div className="pt-1.5 mt-1 border-t border-[#E7D9DE]/60 dark:border-[#21409A]/30 flex flex-wrap items-center justify-center gap-3 text-xs text-[#21409A] dark:text-[#E9B7C3]">
-                                      <span className="text-[11px] text-slate-600 dark:text-slate-300 font-bengali">
-                                        {language === 'bn' ? 'পরম করুণাময়, অতি দয়ালু আল্লাহর নামে শুরু করছি।' : 'In the name of Allah, the Entirely Merciful, the Especially Merciful.'}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          triggerHaptic(15);
-                                          onPlayAyah({ surahNumber: 1, numberInSurah: 1 } as any);
-                                        }}
-                                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F8E8ED] dark:bg-[#10235A] hover:bg-[#E9B7C3]/30 text-[#10235A] dark:text-[#E9B7C3] font-semibold cursor-pointer transition-colors shadow-2xs"
-                                        title={language === 'bn' ? 'বিসমিল্লাহ্ তেলাওয়াত শুনুন' : 'Listen Bismillah'}
-                                      >
-                                        <Volume2 className="w-3 h-3" />
-                                        <span>{language === 'bn' ? 'তেলাওয়াত' : 'Recite'}</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="my-2 py-2 px-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-center">
-                                    <p className="text-[11px] text-amber-800 dark:text-amber-200 font-medium">
-                                      {language === 'bn'
-                                        ? 'কুরআনিক বিধান অনুযায়ী সূরা আত-তাওবাহ্-এর শুরুতে বিসমিল্লাহ্ পাঠ করা হয় না।'
-                                        : 'By Quranic consensus, Bismillah is not recited at the beginning of Surah At-Tawbah.'}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* 3. Continuous Sacred Arabic Ayahs Flow */}
-                            <div
-                              className="text-justify leading-loose font-arabic select-text font-semibold"
-                              dir="rtl"
-                              style={{
-                                fontFamily: getArabicFontFamily(),
-                                fontSize: editionTypo.fontSize,
-                                lineHeight: editionTypo.lineHeight,
-                                letterSpacing: editionTypo.letterSpacing,
-                                textAlignLast: 'center',
-                              }}
-                            >
-                              {displayAyahs.map((ayah) => {
-                                const ayahKey = `${ayah.surahNumber}_${ayah.numberInSurah}`;
-                                const isPlayingThis = playingAyahKey === ayahKey && isPlaying;
-
-                                return (
-                                  <span
-                                    key={ayahKey}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      triggerHaptic(15);
-                                      setSelectedAyahForMeaning(ayah);
-                                    }}
-                                    className={`inline transition-all duration-200 rounded-md cursor-pointer ${
-                                      isPlayingThis
-                                        ? 'border-b-2 border-[#21409A] dark:border-[#E9B7C3] bg-[#21409A]/15 dark:bg-[#E9B7C3]/15 px-0.5 shadow-2xs'
-                                        : 'hover:bg-[#F8E8ED]/50 dark:hover:bg-[#10235A]/40'
-                                    }`}
-                                    title={language === 'bn' ? `আয়াত ${ayah.numberInSurah} (অর্থ দেখতে ট্যাপ করুন)` : `Verse ${ayah.numberInSurah} (Tap for translation)`}
-                                  >
-                                    {/* Render clean Arabic without duplicate Bismillah (Bismillah stays strictly on header) */}
-                                    {(() => {
-                                      // Ayahs must NEVER include Bismillah in the continuous flow (header is the only place it lives)
-                                      let textAr = normalizeQuranArabic(stripBismillahPrefix(ayah.textArabic));
-                                      if (/^[\s\uFEFF\u200B\u200C]*بِ?سْ?مِ?/u.test(textAr)) {
-                                        textAr = normalizeQuranArabic(stripBismillahPrefix(textAr));
-                                      }
-
-                                      // Always apply Tajweed to the cleanly stripped text so no Bismillah tags can ever linger!
-                                      const tajweedAr = showTajweed ? applyAccessibleTajweed(textAr) : undefined;
-
-                                      if (showTajweed && tajweedAr) {
-                                        return (
-                                          <span
-                                            className="inline tajweed-container select-text font-semibold"
-                                            dangerouslySetInnerHTML={{
-                                              __html: tajweedAr,
-                                            }}
-                                          />
-                                        );
-                                      }
-                                      return <span className="inline select-text font-semibold">{textAr}</span>;
-                                    })()}
-
-                                    {/* Beautiful Circular Ayah End Mark with Number */}
-                                    <span
-                                      className="inline-flex items-center justify-center mx-1.5 align-middle select-none"
-                                      dir="ltr"
-                                    >
-                                      <span
-                                        className="relative inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 text-[11px] sm:text-xs font-semibold rounded-full border border-[#21409A]/60 dark:border-[#E9B7C3]/70 bg-white/70 dark:bg-[#10235A]/70 select-none shadow-2xs cursor-pointer hover:scale-110 transition-transform"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          triggerHaptic(20);
-                                          setSelectedAyahForMeaning(ayah);
-                                        }}
-                                      >
-                                        {formatNum(ayah.numberInSurah)}
-                                      </span>
-                                    </span>
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                ) : (
-                  /* =========================================================================
-                     RELIABLE ERROR & RETRY STATE
-                     ========================================================================= */
-                  <div className="py-16 px-4 text-center space-y-3.5 my-auto">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto shadow-xs">
-                      <AlertCircle className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-[#10235A] dark:text-white">
-                        {language === 'bn'
-                          ? `পৃষ্ঠা ${formatNum(currentPageNumber)}-এর তথ্য লোড করা সম্ভব হয়নি`
-                          : `Could not load page ${formatNum(currentPageNumber)}`}
-                      </h4>
-                      <p className="text-xs text-[#6B7280] dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                        {language === 'bn'
-                          ? 'ইন্টারনেট সংযোগ নিশ্চিত করে পুনরায় চেষ্টা করুন, অথবা স্টাডি মোডে সূরা পাঠ করুন।'
-                          : 'Please ensure your internet connection is active and retry, or browse Surahs in Study Mode.'}
-                      </p>
-                    </div>
-                    {onRetryPage && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerHaptic(20);
-                          onRetryPage();
-                        }}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#21409A] hover:bg-[#10235A] text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        <span>{language === 'bn' ? 'পুনরায় চেষ্টা করুন' : 'Retry Page'}</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* ---------------------------------------------------------------
-                  PAGE BOTTOM MARGIN: Page Number at center & quick turns
-                  --------------------------------------------------------------- */}
-              <div className="pt-2 mt-2 border-t border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#10235A] dark:text-[#E9B7C3]">
-                {/* Prev Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePrev();
-                  }}
-                  disabled={currentPageNumber <= 1}
-                  className="p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center gap-1 cursor-pointer font-semibold"
-                  title={language === 'bn' ? 'পূর্ববর্তী পৃষ্ঠা' : 'Previous Page'}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                  <span className="hidden sm:inline">{language === 'bn' ? 'পূর্ববর্তী' : 'Previous'}</span>
-                </button>
-
-                {/* Centered Page Number */}
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setJumpModalTab('page');
-                  }}
-                  className="px-3 py-1 rounded-full bg-white/80 dark:bg-[#10235A]/80 border border-[#E7D9DE] dark:border-[#21409A]/40 font-mono font-bold cursor-pointer hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] transition-colors shadow-2xs flex items-center gap-1.5"
-                  title={language === 'bn' ? 'পৃষ্ঠা পরিবর্তন করুন' : 'Change Page'}
-                >
-                  <span>{language === 'bn' ? 'পৃষ্ঠা' : 'Page'}</span>
-                  <span className="text-[#21409A] dark:text-[#E9B7C3]">
-                    {formatNum(currentPageNumber)}
-                  </span>
-                  <span className="text-[#E7D9DE]">/</span>
-                  <span className="text-muted-slate">{formatNum(totalPages)}</span>
-                </div>
-
-                {/* Next Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleNext();
-                  }}
-                  disabled={currentPageNumber >= totalPages}
-                  className="p-1 sm:px-2.5 sm:py-1 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] disabled:opacity-30 disabled:pointer-events-none transition-colors flex items-center gap-1 cursor-pointer font-semibold"
-                  title={language === 'bn' ? 'পরবর্তী পৃষ্ঠা' : 'Next Page'}
-                >
-                  <span className="hidden sm:inline">{language === 'bn' ? 'পরবর্তী' : 'Next'}</span>
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              </div>
+      {/* =========================================================================
+          SACRED MUSHAF PAGES (Continuous Scroll vs Paginated Single Page)
+          ========================================================================= */}
+      {loading && continuousPages.length === 0 ? (
+        <div className="py-24 text-center space-y-3 w-full max-w-[700px]">
+          <div className="w-8 h-8 rounded-full border-2 border-[#21409A] border-t-transparent animate-spin mx-auto" />
+          <p className="text-xs text-muted-slate">
+            {language === 'bn' ? 'পবিত্র কুরআনের পৃষ্ঠা লোড হচ্ছে...' : 'Loading sacred Quran page...'}
+          </p>
+        </div>
+      ) : scrollMode === 'continuous' ? (
+        <div className="w-full max-w-[700px] space-y-6 sm:space-y-8 pb-16">
+          {/* Top Prepend Loader */}
+          {continuousPages.length > 0 && continuousPages[0].pageNumber > 1 && (
+            <div className="text-center pt-1 pb-2">
+              <button
+                type="button"
+                onClick={handleLoadPrevPage}
+                disabled={isLoadingMore}
+                className="px-4 py-2 rounded-2xl bg-white dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A]/50 text-xs font-bold text-[#10235A] dark:text-[#E9B7C3] shadow-xs hover:bg-[#F8E8ED] dark:hover:bg-[#152a6d] transition-all inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <ChevronUp className="w-4 h-4" />
+                <span>{language === 'bn' ? `পূর্ববর্তী পৃষ্ঠা ${formatNum(continuousPages[0].pageNumber - 1)} লোড করুন` : `Load Previous Page ${continuousPages[0].pageNumber - 1}`}</span>
+              </button>
             </div>
+          )}
+
+          {/* Continuous Pages Stack */}
+          {continuousPages.map((pData) => renderSingleMushafPage(pData, false))}
+
+          {/* Bottom Sentinel for Auto-Loading Next Pages as User Scrolls */}
+          <div ref={bottomSentinelRef} className="py-8 text-center">
+            {isLoadingMore ? (
+              <div className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-white/95 dark:bg-[#10235A]/95 border border-[#E7D9DE] dark:border-[#21409A]/40 max-w-xs mx-auto shadow-sm text-xs font-bold text-[#0F5F62] dark:text-[#B9E2DD]">
+                <div className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                <span>{language === 'bn' ? 'পরবর্তী পৃষ্ঠা লোড হচ্ছে...' : 'Loading next page...'}</span>
+              </div>
+            ) : continuousPages.length > 0 && continuousPages[continuousPages.length - 1].pageNumber < totalPages ? (
+              <button
+                type="button"
+                onClick={handleLoadNextPage}
+                className="px-5 py-2.5 rounded-2xl bg-white dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A]/50 text-xs font-bold text-[#10235A] dark:text-[#E9B7C3] shadow-xs hover:bg-[#F8E8ED] dark:hover:bg-[#152a6d] transition-all inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <ChevronDown className="w-4 h-4" />
+                <span>{language === 'bn' ? `পরবর্তী পৃষ্ঠা ${formatNum(continuousPages[continuousPages.length - 1].pageNumber + 1)} লোড করুন` : `Load Next Page ${continuousPages[continuousPages.length - 1].pageNumber + 1}`}</span>
+              </button>
+            ) : (
+              <div className="py-4 text-xs font-semibold text-muted-slate font-bengali">
+                {language === 'bn' ? '— আল-কুরআন সমাপ্ত —' : '— End of Holy Quran —'}
+              </div>
+            )}
           </div>
         </div>
+      ) : (
+        /* Paginated Single Page Mode */
+        <div className="w-full max-w-[700px]">
+          {pageData ? (
+            renderSingleMushafPage(pageData, true)
+          ) : (
+            <div className="py-24 text-center space-y-3">
+              <div className="w-8 h-8 rounded-full border-2 border-[#21409A] border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-muted-slate">
+                {language === 'bn' ? 'পবিত্র কুরআনের পৃষ্ঠা লোড হচ্ছে...' : 'Loading sacred Quran page...'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* =========================================================================
-            CORNER TAJWID LEGEND (Collapsible with info icon, never covers text)
-            ========================================================================= */}
+      {/* Floating Quick Page Scrubber & Scroll Controller */}
+      {scrollMode === 'continuous' && !isDistractionFree && (
+        <div className="fixed bottom-24 right-3 sm:right-6 z-30 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          {/* Scroll to Top */}
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic(10);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="w-9 h-9 rounded-full bg-white/95 dark:bg-[#10235A]/95 border border-[#21409A]/30 text-[#21409A] dark:text-[#E9B7C3] shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all cursor-pointer backdrop-blur-xs"
+            title={language === 'bn' ? 'একদম উপরে স্ক্রোল করুন' : 'Scroll to Top'}
+          >
+            <ChevronUp className="w-4 h-4" />
+          </button>
+
+          {/* Floating Current Page Pill with jump trigger */}
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic(15);
+              setJumpModalTab('page');
+            }}
+            className="px-3.5 py-1.5 rounded-full bg-[#0F5F62] dark:bg-[#2DD4BF] text-white dark:text-[#0E1416] text-xs font-bold shadow-xl flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-xs font-mono"
+            title={language === 'bn' ? 'যেকোনো পৃষ্ঠায় সরাসরি যান' : 'Jump to Page'}
+          >
+            <ScrollText className="w-3.5 h-3.5" />
+            <span>{language === 'bn' ? 'পৃষ্ঠা' : 'Page'} {formatNum(visiblePage)}</span>
+          </button>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAJWEED LEGEND (Collapsible floating guide, never covers text)
+          ========================================================================= */}
+      {!isDistractionFree && (
         <div
-          className="absolute -bottom-3 right-4 z-20"
+          className="fixed bottom-24 left-3 sm:left-6 z-30"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="relative">
             {/* Collapsed Pill Button */}
             {!isLegendOpen ? (
               <button
+                type="button"
                 onClick={() => {
                   triggerHaptic(15);
                   setIsLegendOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/95 dark:bg-[#10235A]/90 border border-[#21409A]/40 dark:border-[#E9B7C3]/50 text-[#21409A] dark:text-[#E9B7C3] text-[11px] font-bold shadow-md hover:scale-105 transition-all cursor-pointer backdrop-blur-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 dark:bg-[#10235A]/95 border border-[#21409A]/40 dark:border-[#E9B7C3]/50 text-[#21409A] dark:text-[#E9B7C3] text-xs font-bold shadow-lg hover:scale-105 transition-all cursor-pointer backdrop-blur-xs"
                 title={language === 'bn' ? 'তাজবীদ কালার নিয়ম দেখুন' : 'View Tajweed Color Rules'}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{language === 'bn' ? 'তাজবীদ কালার গাইড' : 'Tajweed Guide'}</span>
+                <span className="hidden xs:inline">{language === 'bn' ? 'তাজবীদ গাইড' : 'Tajweed Guide'}</span>
               </button>
             ) : (
               /* Expanded Popover */
@@ -718,6 +1022,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                     <span>{language === 'bn' ? 'কালার-কোডেড তাজবীদ নিয়ম' : 'Color-Coded Tajweed Rules'}</span>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setIsLegendOpen(false)}
                     className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1C2D5A] text-slate-400"
                   >
@@ -756,6 +1061,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                 {/* Toggles */}
                 <div className="pt-1.5 border-t border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-between text-[11px]">
                   <button
+                    type="button"
                     onClick={onToggleTajweed}
                     className="text-[#21409A] dark:text-[#E9B7C3] font-semibold hover:underline"
                   >
@@ -765,6 +1071,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                   </button>
 
                   <button
+                    type="button"
                     onClick={onToggleColorBlind}
                     className={`px-2 py-0.5 rounded-md border text-[10px] font-semibold transition-colors ${
                       colorBlindMode
@@ -786,7 +1093,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* =========================================================================
           AYAH MEANING DRAWER (Bottom Sheet when Ayah is tapped)

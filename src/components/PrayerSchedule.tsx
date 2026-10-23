@@ -123,7 +123,13 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
         if (saved) {
           const parsed = JSON.parse(saved);
           const key = getTodayDateStr();
-          setTodayNamazLog(parsed[key] || { dateStr: key });
+          const nextDay = parsed[key] || { dateStr: key };
+          setTodayNamazLog((prev) => {
+            if (JSON.stringify(prev) === JSON.stringify(nextDay)) {
+              return prev;
+            }
+            return nextDay;
+          });
         }
       } catch {
         // ignore

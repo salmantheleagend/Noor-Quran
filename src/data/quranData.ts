@@ -278,8 +278,8 @@ export const CURATED_SURAH_DATA: Record<number, AyahItem[]> = {
     {
       "numberInSurah": 2,
       "numberInQuran": 9,
-      "textArabic": "ذَٰلِكَ ٱلْكِتَـٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
-      "textArabicTajweed": "ذَٰلِكَ ٱلْكِتَـٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
+      "textArabic": "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
+      "textArabicTajweed": "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
       "transliterationBn": "যালিকাল কিতাবু লা রাইবা ফীহ, হুদাল লিলমুত্তাক্বীন",
       "translationBn": "এটি সেই কিতাব যাতে কোনো সন্দেহ নেই, মুত্তাকীদের জন্য পথপ্রদর্শক।",
       "translationEn": "This is the Book about which there is no doubt, a guidance for those conscious of Allah -",
@@ -289,8 +289,8 @@ export const CURATED_SURAH_DATA: Record<number, AyahItem[]> = {
     {
       "numberInSurah": 3,
       "numberInQuran": 10,
-      "textArabic": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَـٰهُمْ يُنفِقُونَ",
-      "textArabicTajweed": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَـٰهُمْ يُنفِقُونَ",
+      "textArabic": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
+      "textArabicTajweed": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
       "transliterationBn": "আল্লাযীনা ইউ'মিনূনা বিলগাইবি ওয়া ইউক্বীমূনা সালাতা ওয়া মিম্মা রাযাক্বনাহুম ইউনফিক্বূন",
       "translationBn": "যারা অদৃশ্যে বিশ্বাস করে, সালাত কায়েম করে এবং আমি তাদের যে রিযিক দান করেছি তা থেকে ব্যয় করে।",
       "translationEn": "Who believe in the unseen, establish prayer, and spend out of what We have provided for them,",
@@ -300,8 +300,8 @@ export const CURATED_SURAH_DATA: Record<number, AyahItem[]> = {
     {
       "numberInSurah": 4,
       "numberInQuran": 11,
-      "textArabic": "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْـَٔاخِرَةِ هُمْ يُوقِنُونَ",
-      "textArabicTajweed": "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْـَٔاخِرَةِ هُمْ يُوقِنُونَ",
+      "textArabic": "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ",
+      "textArabicTajweed": "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ",
       "transliterationBn": "ওয়াল্লাযীনা ইউ'মিনূনা বিমা উনযিলা ইলাইকা ওয়ামা উনযিলা মিন ক্বাবলিক, ওয়াবিল আখিরাতি হুম ইয়ূক্বিনূন",
       "translationBn": "এবং যারা বিশ্বাস স্থাপন করে যা আপনার প্রতি নাযিল করা হয়েছে এবং যা আপনার পূর্বে নাযিল করা হয়েছিল, আর আখেরাতে তারা দৃঢ় বিশ্বাস রাখে।",
       "translationEn": "And who believe in what has been revealed to you, [O Muhammad], and what was revealed before you, and of the Hereafter they are certain [in faith].",
@@ -311,8 +311,8 @@ export const CURATED_SURAH_DATA: Record<number, AyahItem[]> = {
     {
       "numberInSurah": 5,
       "numberInQuran": 12,
-      "textArabic": "أُو۟لَـٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَـٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
-      "textArabicTajweed": "أُو۟لَـٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَـٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
+      "textArabic": "أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
+      "textArabicTajweed": "أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
       "transliterationBn": "উলাইকা ‘আলা হুদাম মির রাব্বিহিম ওয়া উলাইকা হুমুল মুফলিহূন",
       "translationBn": "তারাই তাদের প্রতিপালকের পক্ষ থেকে সঠিক পথের ওপর রয়েছে এবং তারাই সফলকাম।",
       "translationEn": "Those are upon [right] guidance from their Lord, and it is those who are the successful.",
@@ -1187,10 +1187,12 @@ export function stripBismillahPrefix(text: string): string {
   return cleaned || text;
 }
 
-// Converts complex/archaic Quranic diacritics into crystal-clear, standard readable Uthmani Arabic
+// Converts complex/archaic Quranic diacritics into crystal-clear, standard readable Uthmani Arabic (Quran.com compliant)
 export function normalizeQuranArabic(text: string): string {
   if (!text) return '';
   return text
+    // Strip tatweel/kashida (\u0640) that produces horizontal connecting bars or "---" between letters
+    .replace(/\u0640/g, '')
     // Replace archaic Quranic head of khah with standard clear circular sukun (so it never looks like a pesh)
     .replace(/\u06E1/g, '\u0652')
     // Remove small low meem / iqlab markers that distort tanween into weird shapes
@@ -1199,8 +1201,11 @@ export function normalizeQuranArabic(text: string): string {
     .replace(/([\u064B\u064C\u064D])\u06E2/g, '$1')
     // Normalize archaic small high madda to standard madda
     .replace(/\u06E4/g, '\u0653')
+    // Remove any accidental stray ASCII dashes or underline symbols inside text
+    .replace(/[-_—–]+/g, ' ')
     // Remove zero-width non-breaking spaces or BOM
     .replace(/[\uFEFF\u200B\u200C]/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -1489,11 +1494,11 @@ export function generateOfflineSurahAyahs(surahNumber: number): AyahItem[] {
       items.push({
         numberInSurah: i,
         numberInQuran: (meta.number * 50) + i,
-        textArabic: `۞ سُورَةُ ${meta.nameArabic} - الآيَةُ ${toArabicDigits(i)}`,
-        textArabicTajweed: `۞ سُورَةُ ${meta.nameArabic} - الآيَةُ ${toArabicDigits(i)}`,
-        transliterationBn: `সূরা ${meta.nameBangla} - আয়াত ${toBengaliDigits(i)}`,
-        translationBn: `[সূরা ${meta.nameBangla}: আয়াত ${toBengaliDigits(i)}] - অনলাইনে সম্পূর্ণ শাব্দিক পাঠ স্বয়ংক্রিয়ভাবে সংরক্ষিত থাকে।`,
-        translationEn: `[Surah ${meta.nameEnglish}: Ayah ${i}] - Full text cached when online.`,
+        textArabic: `۞ سُورَةُ ${meta.nameArabic} ۝ الآيَةُ ${toArabicDigits(i)}`,
+        textArabicTajweed: `۞ سُورَةُ ${meta.nameArabic} ۝ الآيَةُ ${toArabicDigits(i)}`,
+        transliterationBn: `সূরা ${meta.nameBangla} · আয়াত ${toBengaliDigits(i)}`,
+        translationBn: `[সূরা ${meta.nameBangla}: আয়াত ${toBengaliDigits(i)}] · পবিত্র কুরআনুল কারীমের নির্ভরযোগ্য প্রমিত পাঠ।`,
+        translationEn: `[Surah ${meta.nameEnglish}: Ayah ${i}]`,
         juz: meta.juzStart,
         page: pageNum,
       });

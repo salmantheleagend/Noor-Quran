@@ -99,7 +99,7 @@ export function applyAccessibleTajweed(rawArabic: string): string {
     // 4. Green: Idgham (Letters following nun sakin / tanween with shaddah like yaa, waw, etc.)
     .replace(/([يورل][َّّ])/g, '<span class="tajweed-idgham">$1</span>')
     // 5. Orange: Ikhfa (Tanween or nun sakin with ikhfa letters)
-    .replace(/([\u064B\u064C\u064D]\s*[تثج thingsدذزسشصضطظفقك]|مِن\s*[تثجدذزسشصضطظفقك]|كُنتُمْ)/g, '<span class="tajweed-ikhfa">$1</span>')
+    .replace(/([\u064B\u064C\u064D]\s*[تثجدذزسشصضطظفقك]|مِن\s*[تثجدذزسشصضطظفقك]|كُنتُمْ)/g, '<span class="tajweed-ikhfa">$1</span>')
     // 6. Gray: Waqf signs & silent letters
     .replace(/([ۚۖۗۘۙۜۥۦۧ])/g, '<span class="tajweed-waqf">$1</span>');
 }
