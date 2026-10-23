@@ -320,20 +320,21 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
     if (currentPageNumber < totalPages) onNextPage();
   };
 
-  // Font styling helper - Ensuring crystal clear Jobor, Jer and Pesh readability
+  // Font styling helper - Ensuring crystal clear Jobor, Jer and Pesh readability with traditional South Asian Indo-Pak Naskh
   const getArabicFontFamily = () => {
     switch (selectedFont) {
-      case 'noto-nastaliq':
-        return "'Noto Nastaliq Urdu', 'Urdu Typesetting', serif";
       case 'scheherazade':
         return "'Scheherazade New', 'Noto Naskh Arabic', serif";
+      case 'noto-nastaliq':
+        return "'Noto Nastaliq Urdu', 'Scheherazade New', serif";
       case 'lateef':
         return "'Lateef', cursive, serif";
       case 'amiri':
       case 'amiri-quran':
+        return "'Amiri Quran', 'Amiri', serif";
       case 'noto-naskh':
       default:
-        return "'Noto Naskh Arabic', 'Scheherazade New', 'Amiri', sans-serif";
+        return "'Scheherazade New', 'Noto Naskh Arabic', 'Amiri', sans-serif";
     }
   };
 
@@ -342,22 +343,22 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
     switch (mushafEdition) {
       case 'hafezi_15':
         return {
-          fontSize: `${Math.round(25 * (zoomScale / 100))}px`,
-          lineHeight: '2.8',
+          fontSize: `${Math.round(26 * (zoomScale / 100))}px`,
+          lineHeight: '2.85',
           letterSpacing: '0.2px',
         };
       case 'nurani_easy':
         return {
-          fontSize: `${Math.round(29 * (zoomScale / 100))}px`,
-          lineHeight: '3.1',
-          letterSpacing: '0.4px',
+          fontSize: `${Math.round(30 * (zoomScale / 100))}px`,
+          lineHeight: '3.15',
+          letterSpacing: '0.35px',
         };
       case 'tajweed':
       case 'standard':
       default:
         return {
-          fontSize: `${Math.round(26 * (zoomScale / 100))}px`,
-          lineHeight: '2.9',
+          fontSize: `${Math.round(27 * (zoomScale / 100))}px`,
+          lineHeight: '2.95',
           letterSpacing: '0.25px',
         };
     }
@@ -375,33 +376,39 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
       <div
         key={`mushaf-page-card-${pNum}`}
         id={`mushaf-page-${pNum}`}
-        className="relative w-full max-w-[700px] px-2 sm:px-4 cursor-pointer scroll-mt-16"
+        className="relative w-full max-w-[700px] px-2 sm:px-3 cursor-pointer scroll-mt-16"
         onClick={() => {
           onToggleDistractionFree();
         }}
       >
-        {/* Outer Frame & Paper Canvas */}
+        {/* Outer Neat Geometric Border Frame with Clean Background */}
         <div
-          className={`relative rounded-3xl transition-all duration-300 shadow-md ${
+          className={`relative rounded-3xl transition-all duration-300 shadow-md border-2 border-[#0F5F62]/35 dark:border-[#2DD4BF]/30 p-1 sm:p-1.5 ${
             colorBlindMode ? 'tajweed-colorblind' : ''
           }`}
           style={{
-            backgroundColor: 'var(--mushaf-paper-bg, #FAF6EB)',
+            backgroundColor: '#FFFFFF',
           }}
         >
-          {/* Inner Golden Margin */}
-          <div className="p-3 sm:p-5 m-1 rounded-[22px] border-2 border-[#D7E9E7] dark:border-[#21409A]/50 bg-[#FAF6EB] dark:bg-[#0B1536] text-[#1F2937] dark:text-[#F8E8ED]">
-            {/* Inner Thin Border Box */}
-            <div className="p-3 sm:p-4 rounded-xl border border-[#E7D9DE] dark:border-[#21409A]/40 min-h-[520px] flex flex-col justify-between">
+          {/* Inner Geometric Double Border Box with Corner Rosettes */}
+          <div className="relative p-3 sm:p-5 rounded-[22px] border border-[#0F5F62]/20 dark:border-[#2DD4BF]/25 bg-white dark:bg-[#0B1536] text-[#111827] dark:text-[#F9FAFB] shadow-inner">
+            {/* 4 Islamic Geometric Corner Rosette Accents */}
+            <span className="absolute top-1.5 left-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
+            <span className="absolute top-1.5 right-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
+            <span className="absolute bottom-1.5 left-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
+            <span className="absolute bottom-1.5 right-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
+
+            {/* Content Container */}
+            <div className="p-2 sm:p-3.5 rounded-xl border border-[#D7E9E7]/80 dark:border-[#1E3A5F] min-h-[520px] flex flex-col justify-between">
               <div>
                 {/* PAGE TOP MARGIN */}
-                <div className="pb-2 mb-2 border-b border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#10235A] dark:text-[#E9B7C3]">
+                <div className="pb-2 mb-2 border-b border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#0F5F62] dark:text-[#B9E2DD]">
                   {/* Left: Juz Number */}
-                  <div className="font-semibold flex items-center gap-1">
+                  <div className="font-bold flex items-center gap-1">
                     <span>
                       {language === 'bn' ? `পারা ${formatNum(jNum)}` : `Juz ${formatNum(jNum)}`}
                     </span>
-                    <span className="text-muted-slate text-[10px]">
+                    <span className="text-muted-slate text-[10px] font-normal">
                       ({mushafEdition === 'hafezi_15' && (language === 'bn' ? '১৫ লাইন হাফেজি' : '15-Line Hafezi')}
                       {mushafEdition === 'tajweed' && (language === 'bn' ? 'কালার তাজবীদ' : 'Tajweed Color')}
                       {mushafEdition === 'nurani_easy' && (language === 'bn' ? 'নূরানী সহজ পাঠ' : 'Nurani Script')}
@@ -410,7 +417,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                   </div>
 
                   {/* Right: Surah Name */}
-                  <div className="font-semibold">
+                  <div className="font-bold text-[#0F5F62] dark:text-[#2DD4BF]">
                     {surahMeta
                       ? (language === 'bn'
                           ? `সূরা ${surahMeta.nameBangla}`
@@ -954,7 +961,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
 
       {/* Floating Quick Page Scrubber & Scroll Controller */}
       {scrollMode === 'continuous' && !isDistractionFree && (
-        <div className="fixed bottom-24 right-3 sm:right-6 z-30 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+        <div className="fixed bottom-[calc(5.2rem+env(safe-area-inset-bottom,0px))] right-3 sm:right-6 z-40 flex flex-col items-end gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
           {/* Scroll to Top */}
           <button
             type="button"
@@ -989,7 +996,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
           ========================================================================= */}
       {!isDistractionFree && (
         <div
-          className="fixed bottom-24 left-3 sm:left-6 z-30"
+          className="fixed bottom-[calc(5.2rem+env(safe-area-inset-bottom,0px))] left-3 sm:left-6 z-40"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="relative">

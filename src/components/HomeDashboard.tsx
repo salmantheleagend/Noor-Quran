@@ -1201,7 +1201,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 <span>·</span>
                 <span>{language === 'bn' ? 'চাশত' : 'Chasht'}: {formatPrayerTime12h(prayerTimes.chashtStart, language)}</span>
                 <span>·</span>
-                <span>{language === 'bn' ? 'তাহাজ্জুদ' : 'Tahajjud'}: {formatPrayerTime12h(prayerTimes.tahajjudStart, language)}</span>
+                <span>
+                  {language === 'bn' ? 'তাহাজ্জুদ' : 'Tahajjud'}: {formatPrayerTime12h(prayerTimes.tahajjudStart, language)} - {formatPrayerTime12h(prayerTimes.tahajjudEnd, language)}
+                </span>
               </div>
             </div>
           </div>

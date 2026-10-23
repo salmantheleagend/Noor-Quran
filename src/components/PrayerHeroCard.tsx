@@ -1095,10 +1095,16 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
             3. ইফতার (Iftar)
             4. তাহাজ্জুদ (Tahajjud)
         */}
-        <div className="grid grid-cols-4 gap-1.5 sm:gap-2 pt-2 border-t border-white/15 text-center">
+        {/* 4 Small Balanced Cards inside Hero (Responsive 2x2 on mobile, 4-col on tablet/desktop):
+            1. সূর্যোদয় (Sunrise)
+            2. সূর্যাস্ত (Sunset)
+            3. ইফতার (Iftar)
+            4. তাহাজ্জুদ (Tahajjud - Start & End Times fully visible on all mobile screens)
+        */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-white/15 text-center">
           {/* 1. সূর্যোদয় */}
           <div
-            className={`rounded-xl p-1.5 sm:p-2 border backdrop-blur-xs transition-colors ${
+            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1116,18 +1122,23 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30'
             }`}
           >
-            <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-white/90">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
               <Sunrise className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <span className="truncate">{t.sunrise}</span>
+              <span>{t.sunrise}</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold font-mono tabular-nums mt-0.5 block text-white">
-              {formatPrayerTime12h(prayerTimes.sunrise, language)}
-            </span>
+            <div className="mt-1">
+              <span className="text-sm sm:text-base font-bold font-mono tabular-nums block text-white leading-tight">
+                {formatPrayerTime12h(prayerTimes.sunrise, language)}
+              </span>
+              <span className="text-[10px] text-white/70 block mt-0.5">
+                {language === 'bn' ? 'ভোর লগ্ন' : 'Dawn Period'}
+              </span>
+            </div>
           </div>
 
           {/* 2. সূর্যাস্ত (Sunset) */}
           <div
-            className={`rounded-xl p-1.5 sm:p-2 border backdrop-blur-xs transition-colors ${
+            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1145,18 +1156,23 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30 ring-1 ring-orange-400/40'
             }`}
           >
-            <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-white/90">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
               <Sunset className="w-3.5 h-3.5 text-orange-400 shrink-0" />
-              <span className="truncate">{t.sunset || (language === 'bn' ? 'সূর্যাস্ত' : 'Sunset')}</span>
+              <span>{t.sunset || (language === 'bn' ? 'সূর্যাস্ত' : 'Sunset')}</span>
             </div>
-            <span className="text-[11px] sm:text-xs font-bold font-mono tabular-nums mt-0.5 block text-orange-200">
-              {formatPrayerTime12h(prayerTimes.sunset, language)}
-            </span>
+            <div className="mt-1">
+              <span className="text-sm sm:text-base font-bold font-mono tabular-nums block text-orange-200 leading-tight">
+                {formatPrayerTime12h(prayerTimes.sunset, language)}
+              </span>
+              <span className="text-[10px] text-orange-200/70 block mt-0.5">
+                {language === 'bn' ? 'মাগরিব লগ্ন' : 'Dusk Period'}
+              </span>
+            </div>
           </div>
 
           {/* 3. ইফতার */}
           <div
-            className={`rounded-xl p-1.5 sm:p-2 border backdrop-blur-xs transition-colors ${
+            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1174,36 +1190,41 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30'
             }`}
           >
-            <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-white/90">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
               <Utensils className="w-3.5 h-3.5 text-rose-300 shrink-0" />
-              <span className="truncate">{t.iftar}</span>
+              <span>{t.iftar}</span>
             </div>
-            <span
-              className={`text-[11px] sm:text-xs font-bold font-mono tabular-nums mt-0.5 block ${
-                styleId === 'classic_teal'
-                  ? 'text-[#B9E2DD]'
-                  : styleId === 'thuluth_gold_calligraphy'
-                  ? 'text-[#FDE047]'
-                  : styleId === 'kaaba_kiswah'
-                  ? 'text-yellow-300'
-                  : styleId === 'sunset_dusk'
-                  ? 'text-[#FDBA74]'
-                  : styleId === 'modern_glass'
-                  ? 'text-emerald-300'
-                  : styleId === 'celestial_night'
-                  ? 'text-cyan-300'
-                  : styleId === 'kufic_indigo_mosaic'
-                  ? 'text-cyan-300'
-                  : 'text-orange-200'
-              }`}
-            >
-              {formatPrayerTime12h(prayerTimes.iftar, language)}
-            </span>
+            <div className="mt-1">
+              <span
+                className={`text-sm sm:text-base font-bold font-mono tabular-nums block leading-tight ${
+                  styleId === 'classic_teal'
+                    ? 'text-[#B9E2DD]'
+                    : styleId === 'thuluth_gold_calligraphy'
+                    ? 'text-[#FDE047]'
+                    : styleId === 'kaaba_kiswah'
+                    ? 'text-yellow-300'
+                    : styleId === 'sunset_dusk'
+                    ? 'text-[#FDBA74]'
+                    : styleId === 'modern_glass'
+                    ? 'text-emerald-300'
+                    : styleId === 'celestial_night'
+                    ? 'text-cyan-300'
+                    : styleId === 'kufic_indigo_mosaic'
+                    ? 'text-cyan-300'
+                    : 'text-orange-200'
+                }`}
+              >
+                {formatPrayerTime12h(prayerTimes.iftar, language)}
+              </span>
+              <span className="text-[10px] text-white/70 block mt-0.5">
+                {language === 'bn' ? 'রোজার সমাপ্তি' : 'Break Fast'}
+              </span>
+            </div>
           </div>
 
-          {/* 4. তাহাজ্জুদ */}
+          {/* 4. তাহাজ্জুদ (Start and End times clearly visible on mobile) */}
           <div
-            className={`rounded-xl p-1.5 sm:p-2 border backdrop-blur-xs transition-colors ${
+            className={`rounded-2xl p-2 sm:p-2.5 border backdrop-blur-xs transition-colors flex flex-col justify-between ${
               styleId === 'classic_teal'
                 ? 'bg-[#0C454B]/80 border-[#13545A]'
                 : styleId === 'thuluth_gold_calligraphy'
@@ -1221,17 +1242,23 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
                 : 'bg-[#291822]/85 border-orange-500/30'
             }`}
           >
-            <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-white/90">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-white/95 font-semibold">
               <Moon className="w-3.5 h-3.5 text-cyan-200 shrink-0" />
-              <span className="truncate">{t.tahajjud}</span>
+              <span>{t.tahajjud}</span>
             </div>
-            <div className="mt-0.5">
-              <span className="text-[10px] sm:text-[11px] font-bold font-mono tabular-nums block text-white leading-tight">
-                {formatPrayerTime12h(prayerTimes.tahajjudStart, language)}
-              </span>
-              <span className="text-[8.5px] sm:text-[9px] font-mono text-white/70 block leading-tight truncate">
-                {language === 'bn' ? 'শেষ: ' : 'Ends: '}{formatPrayerTime12h(prayerTimes.tahajjudEnd, language)}
-              </span>
+            <div className="mt-1 flex items-center justify-center gap-1.5 flex-wrap">
+              <div className="bg-black/35 px-1.5 sm:px-2 py-0.5 rounded-lg border border-white/10 text-center">
+                <span className="text-[9px] text-white/70 block leading-none">{language === 'bn' ? 'শুরু' : 'Start'}</span>
+                <span className="text-xs sm:text-[13px] font-bold font-mono tabular-nums text-white block mt-0.5 leading-tight">
+                  {formatPrayerTime12h(prayerTimes.tahajjudStart, language)}
+                </span>
+              </div>
+              <div className="bg-black/35 px-1.5 sm:px-2 py-0.5 rounded-lg border border-amber-300/30 text-center">
+                <span className="text-[9px] text-amber-200/90 block leading-none">{language === 'bn' ? 'শেষ সময়' : 'End Time'}</span>
+                <span className="text-xs sm:text-[13px] font-bold font-mono tabular-nums text-amber-200 block mt-0.5 leading-tight">
+                  {formatPrayerTime12h(prayerTimes.tahajjudEnd, language)}
+                </span>
+              </div>
             </div>
           </div>
         </div>

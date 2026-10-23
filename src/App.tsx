@@ -479,7 +479,7 @@ export default function App() {
       <main
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="flex-1 w-full max-w-2xl mx-auto px-1 sm:px-2 pt-2"
+        className="flex-1 w-full max-w-2xl mx-auto px-2 sm:px-3 pt-1 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
       >
         <AnimatePresence mode="wait">
           <motion.div

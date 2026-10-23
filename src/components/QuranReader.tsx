@@ -47,13 +47,14 @@ import { motion } from 'motion/react';
 export const getArabicFontFamilyStyle = (font: ArabicFontFamily): string => {
   switch (font) {
     case 'scheherazade':
-      return "'Scheherazade New', 'Noto Naskh Arabic', serif";
+      return "'Scheherazade New', 'Noto Naskh Arabic', 'Amiri', serif";
     case 'noto-nastaliq':
-      return "'Noto Nastaliq Urdu', serif";
+      return "'Noto Nastaliq Urdu', 'Scheherazade New', serif";
     case 'lateef':
       return "'Lateef', serif";
     case 'amiri':
     case 'amiri-quran':
+      return "'Amiri Quran', 'Amiri', serif";
     case 'noto-naskh':
     default:
       return "'Noto Naskh Arabic', 'Scheherazade New', 'Amiri', sans-serif";
@@ -61,10 +62,10 @@ export const getArabicFontFamilyStyle = (font: ArabicFontFamily): string => {
 };
 
 export const ARABIC_FONTS: { id: ArabicFontFamily; name: string; labelBn: string }[] = [
-  { id: 'noto-naskh', name: 'নাসখ - স্পষ্ট হরকত (Noto Naskh) [প্রস্তাবিত]', labelBn: 'নাসখ (সহজপাঠ্য)' },
-  { id: 'scheherazade', name: 'শাহারাজাদ (Scheherazade)', labelBn: 'শাহারাজাদ' },
-  { id: 'amiri-quran', name: 'উসমানি কুরআন (Amiri Quran)', labelBn: 'উসমানি' },
-  { id: 'noto-nastaliq', name: 'নূরানী / নাস্তালিক (Nastaliq)', labelBn: 'নূরানী' },
+  { id: 'scheherazade', name: 'ইন্দো-পাক নাসখ লিপি (Indo-Pak Naskh) [প্রস্তাবিত]', labelBn: 'ইন্দো-পাক নাসখ' },
+  { id: 'noto-naskh', name: 'মদিনা নাসখ - স্পষ্ট হরকত (Noto Naskh)', labelBn: 'মদিনা নাসখ' },
+  { id: 'noto-nastaliq', name: 'নূরানী হাফেজি / নাস্তালিক (Nastaliq)', labelBn: 'নূরানী হাফেজি' },
+  { id: 'amiri-quran', name: 'উসমানি কুরআন (Amiri Quran)', labelBn: 'উসমানি কুরআন' },
   { id: 'amiri', name: 'ক্লাসিক আমিরি (Amiri)', labelBn: 'আমিরি' },
   { id: 'lateef', name: 'লতিফ লিপি (Lateef)', labelBn: 'লতিফ' },
 ];
@@ -1182,7 +1183,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
           COMPACT MINI AUDIO PLAYER (Docked above bottom navigation)
           ========================================================================= */}
       {playingAyahDetails && (
-        <div className="fixed bottom-16 left-0 right-0 z-30 p-2 sm:p-3 pointer-events-none">
+        <div className="fixed bottom-[calc(4.8rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 p-2 sm:p-3 pointer-events-none">
           <div className="max-w-md mx-auto p-3 rounded-2xl bg-[#10235A] text-white border border-[#21409A] shadow-2xl backdrop-blur-md pointer-events-auto flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <button
