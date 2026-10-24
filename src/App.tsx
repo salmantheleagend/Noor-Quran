@@ -18,6 +18,7 @@ import {
 import { DEFAULT_LOCATION, BD_DISTRICTS } from './data/districtsBD';
 import { calculatePrayerTimes } from './utils/prayerTimes';
 import { triggerHaptic } from './utils/audioPlayer';
+import { checkAndTriggerPrayerNotifications } from './utils/prayerNotifications';
 import { Header } from './components/Header';
 import { BottomNav, MainTabType } from './components/BottomNav';
 
@@ -256,6 +257,33 @@ export default function App() {
     preferences.calculationMethod,
     preferences.asrMethod
   );
+
+  // Monitor and deliver local prayer notifications & adhan alerts
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check immediately on render or when prayer times change
+    checkAndTriggerPrayerNotifications(prayerTimes, preferences.language);
+
+    // Run periodic interval check every 30 seconds
+    const intervalId = setInterval(() => {
+      checkAndTriggerPrayerNotifications(prayerTimes, preferences.language);
+    }, 30000);
+
+    // Check immediately when user returns to or unlocks the phone/screen
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndTriggerPrayerNotifications(prayerTimes, preferences.language);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [prayerTimes, preferences.language]);
 
   // Handlers
   const handleUpdatePreferences = (partial: Partial<UserPreferences>) => {

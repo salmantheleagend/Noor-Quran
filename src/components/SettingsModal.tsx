@@ -20,9 +20,23 @@ import {
   Sparkles,
   WifiOff,
   ShieldCheck,
+  Bell,
+  BellRing,
+  BellOff,
+  AlertCircle,
+  Clock,
+  Send,
 } from 'lucide-react';
 import { triggerHaptic } from '../utils/audioPlayer';
 import { applyThemeToDOM } from '../utils/themeManager';
+import {
+  getPrayerNotificationSettings,
+  savePrayerNotificationSettings,
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendTestPrayerNotification,
+  PrayerNotificationSettings,
+} from '../utils/prayerNotifications';
 import islamicBadge from '../assets/images/islamic_app_badge_1791133494322.jpg';
 
 interface SettingsModalProps {
@@ -56,6 +70,90 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [customColorInput, setCustomColorInput] = useState<string>(
     preferences.customPrimaryColor || '#0F5F62'
   );
+
+  const [notifSettings, setNotifSettings] = useState<PrayerNotificationSettings>(() =>
+    getPrayerNotificationSettings()
+  );
+  const [permStatus, setPermStatus] = useState<NotificationPermission | 'unsupported'>(() =>
+    getNotificationPermission()
+  );
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [testFeedback, setTestFeedback] = useState<string | null>(null);
+
+  const handleRequestPermission = async () => {
+    triggerHaptic(20);
+    const res = await requestNotificationPermission();
+    setPermStatus(res.permission);
+    if (res.granted) {
+      setTestFeedback(language === 'bn' ? '✓ নোটিফিকেশন অনুমতি সফল হয়েছে!' : '✓ Notification permission granted!');
+      const updated: PrayerNotificationSettings = { ...notifSettings, enabled: true };
+      setNotifSettings(updated);
+      savePrayerNotificationSettings(updated);
+    } else {
+      setTestFeedback(
+        language === 'bn'
+          ? 'অনুমতি প্রদান করা হয়নি। ব্রাউজার বা ফোন সেটিংসে গিয়ে অনুমতি দিন।'
+          : 'Permission not granted. Please allow in browser or device settings.'
+      );
+    }
+  };
+
+  const handleSendTestNotification = async () => {
+    triggerHaptic(20);
+    setIsSendingTest(true);
+    setTestFeedback(null);
+    const res = await sendTestPrayerNotification(language);
+    setIsSendingTest(false);
+    setTestFeedback(res.message);
+  };
+
+  const handleTogglePrayer = (prayerKey: keyof PrayerNotificationSettings['prayers']) => {
+    triggerHaptic(15);
+    const updated: PrayerNotificationSettings = {
+      ...notifSettings,
+      prayers: {
+        ...notifSettings.prayers,
+        [prayerKey]: !notifSettings.prayers[prayerKey],
+      },
+    };
+    setNotifSettings(updated);
+    savePrayerNotificationSettings(updated);
+  };
+
+  const handleToggleMasterNotification = async () => {
+    triggerHaptic(15);
+    if (!notifSettings.enabled && permStatus !== 'granted') {
+      const res = await requestNotificationPermission();
+      setPermStatus(res.permission);
+      if (!res.granted) return;
+    }
+    const updated: PrayerNotificationSettings = {
+      ...notifSettings,
+      enabled: !notifSettings.enabled,
+    };
+    setNotifSettings(updated);
+    savePrayerNotificationSettings(updated);
+  };
+
+  const handleChangeOffset = (minutes: number) => {
+    triggerHaptic(15);
+    const updated: PrayerNotificationSettings = {
+      ...notifSettings,
+      reminderOffsetMinutes: minutes,
+    };
+    setNotifSettings(updated);
+    savePrayerNotificationSettings(updated);
+  };
+
+  const handleToggleAdhanTone = () => {
+    triggerHaptic(15);
+    const updated: PrayerNotificationSettings = {
+      ...notifSettings,
+      adhanToneEnabled: !notifSettings.adhanToneEnabled,
+    };
+    setNotifSettings(updated);
+    savePrayerNotificationSettings(updated);
+  };
 
   const handleApplyCustomColor = (hex: string) => {
     let clean = hex.trim();
@@ -697,6 +795,279 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               />
             </div>
           </div>
+
+          {/* 8. PRAYER TIME NOTIFICATIONS & ADHAN REMINDERS */}
+          <div className="space-y-3 p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#1C2D5A]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#21409A]/10 dark:bg-[#E9B7C3]/20 text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center">
+                  <BellRing className="w-4 h-4" />
+                </div>
+                <div>
+                  <label className="font-bold text-[#10235A] dark:text-white block text-xs">
+                    নামাজের ওয়াক্ত ও আযান নোটিফিকেশন
+                  </label>
+                  <p className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                    ফোনে প্রতিটি সালাতের রিমাইন্ডার ও আযান সতর্কতা
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Switch */}
+              <button
+                onClick={handleToggleMasterNotification}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer min-h-[24px] ${
+                  notifSettings.enabled ? 'bg-[#21409A]' : 'bg-[#E7D9DE] dark:bg-slate-700'
+                }`}
+                aria-label="Toggle Master Notification"
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 left-1 ${
+                    notifSettings.enabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Permission Status Box */}
+            <div className="p-2.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E] space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold text-[#10235A] dark:text-white flex items-center gap-1.5">
+                  <span className="text-xs">📱</span>
+                  <span>ফোনের অনুমতি (Phone Permission):</span>
+                </span>
+                {permStatus === 'granted' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] flex items-center gap-1 border border-emerald-500/30">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                    <span>অনুমতি সক্রিয় (Allowed)</span>
+                  </span>
+                ) : permStatus === 'denied' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-red-500/15 text-red-600 dark:text-red-400 font-bold text-[10px] flex items-center gap-1 border border-red-500/30">
+                    <AlertCircle className="w-3 h-3 stroke-[2.5]" />
+                    <span>ব্লক করা (Blocked)</span>
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-bold text-[10px] flex items-center gap-1 border border-amber-500/30">
+                    <span>অনুমতি প্রয়োজন</span>
+                  </span>
+                )}
+              </div>
+
+              {permStatus === 'denied' && (
+                <p className="text-[10px] text-red-600 dark:text-red-400 leading-snug">
+                  ⚠️ আপনার ব্রাউজারে নোটিফিকেশন পারমিশন বন্ধ আছে। অ্যাড্রেস বারের সাইট সেটিংস আইকনে ক্লিক করে Notifications ‘Allow’ করে দিন।
+                </p>
+              )}
+
+              {permStatus !== 'granted' && permStatus !== 'unsupported' && (
+                <button
+                  type="button"
+                  onClick={handleRequestPermission}
+                  className="w-full py-2 px-3 rounded-xl bg-[#21409A] hover:bg-[#10235A] text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors min-h-[38px]"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>নোটিফিকেশন অনুমতি দিন (Enable Notification)</span>
+                </button>
+              )}
+
+              {permStatus === 'granted' && (
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#E7D9DE]/60 dark:border-[#24386E]/60">
+                  <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                    ফোনে পরীক্ষা করে দেখতে পারেন:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSendTestNotification}
+                    disabled={isSendingTest}
+                    className="py-1 px-2.5 rounded-lg bg-[#F8E8ED] hover:bg-[#E9B7C3]/30 dark:bg-[#1C2D5A] dark:hover:bg-[#24386E] text-[#21409A] dark:text-[#E9B7C3] font-bold text-[10px] flex items-center gap-1 cursor-pointer transition-colors border border-[#E7D9DE] dark:border-[#24386E]"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>{isSendingTest ? 'পাঠানো হচ্ছে...' : 'টেস্ট নোটিফিকেশন'}</span>
+                  </button>
+                </div>
+              )}
+
+              {testFeedback && (
+                <p className="text-[10px] font-semibold text-[#21409A] dark:text-[#E9B7C3] bg-[#F8E8ED] dark:bg-[#10235A] p-2 rounded-lg leading-tight">
+                  {testFeedback}
+                </p>
+              )}
+            </div>
+
+            {/* If master switch is ON, show detailed options */}
+            {notifSettings.enabled && (
+              <div className="space-y-3 pt-1">
+                {/* 1. Reminder Offset Timing */}
+                <div className="space-y-1.5 p-2.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E]">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
+                    <span className="font-bold text-[#10235A] dark:text-white text-[11px]">
+                      কখন নোটিফিকেশন দেওয়া হবে? (Reminder Timing)
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1 pt-1">
+                    {[
+                      { mins: 0, labelBn: 'ঠিক ওয়াক্তে', subBn: 'Exact' },
+                      { mins: 5, labelBn: '৫ মিনিট আগে', subBn: '5m Before' },
+                      { mins: 10, labelBn: '১০ মিনিট আগে', subBn: '10m Before' },
+                      { mins: 15, labelBn: '১৫ মিনিট আগে', subBn: '15m Before' },
+                    ].map((opt) => {
+                      const isSel = notifSettings.reminderOffsetMinutes === opt.mins;
+                      return (
+                        <button
+                          key={opt.mins}
+                          type="button"
+                          onClick={() => handleChangeOffset(opt.mins)}
+                          className={`p-1.5 rounded-lg border text-center transition-all cursor-pointer ${
+                            isSel
+                              ? 'bg-[#21409A] text-white border-[#21409A] shadow-xs'
+                              : 'bg-[#FCFAF8] dark:bg-[#10235A] text-[#10235A] dark:text-slate-300 border-[#E7D9DE] dark:border-[#24386E]'
+                          }`}
+                        >
+                          <span className="text-[10px] font-bold block leading-tight">{opt.labelBn}</span>
+                          <span className={`text-[8px] block ${isSel ? 'text-white/80' : 'text-slate-400'}`}>
+                            {opt.subBn}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Adhan Tone & Haptics Option */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E]">
+                  <div>
+                    <span className="font-bold text-[#10235A] dark:text-white block text-xs">
+                      আযান সুর ও কম্পন (Adhan Tone & Vibrate)
+                    </span>
+                    <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                      নোটিফিকেশনের সাথে সুন্দর আযান সুর ও কম্পন বাজান
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleToggleAdhanTone}
+                    className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer min-h-[24px] ${
+                      notifSettings.adhanToneEnabled ? 'bg-[#21409A]' : 'bg-[#E7D9DE] dark:bg-slate-700'
+                    }`}
+                    aria-label="Toggle Adhan Tone"
+                  >
+                    <div
+                      className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 left-1 ${
+                        notifSettings.adhanToneEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 3. Individual Prayer Reminders */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#10235A] dark:text-white text-xs">
+                      ওয়াক্তভিত্তিক নোটিফিকেশন তালিকা (Prayer Waqt Toggles):
+                    </span>
+                    <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                      পছন্দমতো অন/অফ করুন
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    {[
+                      {
+                        key: 'fajr' as const,
+                        nameBn: 'ফজর (Fajr)',
+                        meaningBn: 'সুবহে সাদিক ও ভোরের সালাত',
+                        badge: 'ফরজ',
+                      },
+                      {
+                        key: 'sunrise' as const,
+                        nameBn: 'সূর্যোদয় ও ইশরাক (Sunrise / Ishraq)',
+                        meaningBn: 'সূর্যোদয় সম্পন্ন ও নফল সালাতের প্রস্তুতি',
+                        badge: 'নফল',
+                      },
+                      {
+                        key: 'dhuhr' as const,
+                        nameBn: "যোহর ও জুমু'আ (Dhuhr / Jumuah)",
+                        meaningBn: "দুপুরের সালাত ও শুক্রবার জুমু'আ",
+                        badge: 'ফরজ',
+                      },
+                      {
+                        key: 'asr' as const,
+                        nameBn: 'আসর (Asr)',
+                        meaningBn: 'বিকেলের সালাত (সালাতুল উসতা)',
+                        badge: 'ফরজ',
+                      },
+                      {
+                        key: 'maghrib' as const,
+                        nameBn: 'মাগরিব ও ইফতার (Maghrib & Iftar)',
+                        meaningBn: 'সূর্যাস্ত, ইফতার ও সন্ধ্যার সালাত',
+                        badge: 'ফরজ',
+                      },
+                      {
+                        key: 'isha' as const,
+                        nameBn: 'ইশা ও বিতর (Isha & Witr)',
+                        meaningBn: 'রাতের সালাত ও বিতর',
+                        badge: 'ফরজ',
+                      },
+                      {
+                        key: 'tahajjud' as const,
+                        nameBn: 'তাহাজ্জুদ ও সাহরি (Tahajjud & Sahri)',
+                        meaningBn: 'রাতের শেষ তৃতীয়াংশের কিয়ামুল লাইল',
+                        badge: 'নফল/সুন্নাহ',
+                      },
+                    ].map((item) => {
+                      const isEnabled = notifSettings.prayers[item.key];
+                      return (
+                        <div
+                          key={item.key}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE]/80 dark:border-[#24386E]/80 hover:border-[#21409A]/40 transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${
+                                isEnabled
+                                  ? 'bg-[#21409A] text-white shadow-xs'
+                                  : 'bg-[#E7D9DE] dark:bg-slate-700 text-[#6B7280] dark:text-slate-400'
+                              }`}
+                            >
+                              {isEnabled ? <Bell className="w-3.5 h-3.5" /> : <BellOff className="w-3.5 h-3.5" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-[#10235A] dark:text-white text-xs truncate">
+                                  {item.nameBn}
+                                </span>
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] font-semibold shrink-0">
+                                  {item.badge}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-[#6B7280] dark:text-slate-400 block truncate">
+                                {item.meaningBn}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleTogglePrayer(item.key)}
+                            className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer min-h-[24px] shrink-0 ml-2 ${
+                              isEnabled ? 'bg-[#21409A]' : 'bg-[#E7D9DE] dark:bg-slate-700'
+                            }`}
+                            aria-label={`Toggle ${item.nameBn}`}
+                          >
+                            <div
+                              className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 left-1 ${
+                                isEnabled ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
 
           {/* 8. OFFLINE MODE STATUS CARD */}
           <div className="p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#1C2D5A] space-y-1.5">

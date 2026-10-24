@@ -111,3 +111,33 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 5. Handle Notification Clicks (focus open app or open root window)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const urlToOpen = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+
+// 6. Handle client message to show notification from background/service worker
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    if (self.registration && self.registration.showNotification) {
+      self.registration.showNotification(title, options);
+    }
+  }
+});
+

@@ -11,6 +11,9 @@ import {
   BookOpen,
   Check,
   History,
+  Edit2,
+  RotateCcw,
+  Info,
 } from 'lucide-react';
 import { triggerHaptic } from '../utils/audioPlayer';
 import { toBn } from '../utils/prayerTimes';
@@ -35,6 +38,31 @@ export interface DayNamazRecord {
 export const STORAGE_KEY_NAMAZ_LOG = 'noor_quran_namaz_tracker_log_v2';
 export const STORAGE_KEY_QAZA_COUNT = 'noor_quran_namaz_qaza_repaid_v2';
 export const STORAGE_KEY_TRACKING_START_DATE = 'noor_quran_namaz_tracking_start_date';
+export const STORAGE_KEY_TRACKING_INITIALIZED = 'noor_quran_namaz_tracking_initialized';
+
+export const hasRecordedPrayer = (dayRecord?: DayNamazRecord): boolean => {
+  if (!dayRecord) return false;
+  return (
+    dayRecord.fajr === 'prayed' ||
+    dayRecord.fajr === 'missed' ||
+    dayRecord.dhuhr === 'prayed' ||
+    dayRecord.dhuhr === 'missed' ||
+    dayRecord.asr === 'prayed' ||
+    dayRecord.asr === 'missed' ||
+    dayRecord.maghrib === 'prayed' ||
+    dayRecord.maghrib === 'missed' ||
+    dayRecord.isha === 'prayed' ||
+    dayRecord.isha === 'missed' ||
+    !!dayRecord.tahajjud
+  );
+};
+
+export const getEarliestRecordedDate = (allLogs: Record<string, DayNamazRecord>): string | null => {
+  const dates = Object.keys(allLogs)
+    .filter((dStr) => hasRecordedPrayer(allLogs[dStr]))
+    .sort();
+  return dates.length > 0 ? dates[0] : null;
+};
 
 const WAQT_LIST: { id: WaqtKey; nameBn: string; nameEn: string; nameAr: string; rakatsBn: string; rakatsEn: string }[] = [
   { id: 'fajr', nameBn: 'ফজর', nameEn: 'Fajr', nameAr: 'الفجر', rakatsBn: '২ রাকাত ফরজ', rakatsEn: '2 Rakats Fard' },
@@ -125,36 +153,60 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
 
   const todayStr = useMemo(() => getDateStr(new Date()), []);
 
-  // Tracking start date: The date when user first started tracking in the app
-  const [trackingStartDate, setTrackingStartDate] = useState<string>(() => {
+  // Track whether the user has actually started prayer calculation/tracking
+  const [isTrackingActive, setIsTrackingActive] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_TRACKING_START_DATE);
-      if (saved) return saved;
-    } catch {
-      // ignore
-    }
-    // If not set, inspect logs to find earliest recorded day or fallback to today
-    try {
+      if (localStorage.getItem(STORAGE_KEY_TRACKING_INITIALIZED) === 'true') {
+        return true;
+      }
       const savedLogs = localStorage.getItem(STORAGE_KEY_NAMAZ_LOG);
       if (savedLogs) {
-        const parsed = JSON.parse(savedLogs);
-        const keys = Object.keys(parsed).sort();
-        if (keys.length > 0 && keys[0] <= todayStr) {
-          localStorage.setItem(STORAGE_KEY_TRACKING_START_DATE, keys[0]);
-          return keys[0];
+        const parsed: Record<string, DayNamazRecord> = JSON.parse(savedLogs);
+        if (getEarliestRecordedDate(parsed) !== null) {
+          return true;
         }
       }
     } catch {
       // ignore
     }
-    const today = getDateStr(new Date());
-    try {
-      localStorage.setItem(STORAGE_KEY_TRACKING_START_DATE, today);
-    } catch {
-      // ignore
-    }
-    return today;
+    return false;
   });
+
+  // Tracking start date: ONLY starts from the day user begins tracking, not from app installation date
+  const [trackingStartDate, setTrackingStartDate] = useState<string>(() => {
+    try {
+      const isInit = localStorage.getItem(STORAGE_KEY_TRACKING_INITIALIZED) === 'true';
+      const savedDate = localStorage.getItem(STORAGE_KEY_TRACKING_START_DATE);
+      const savedLogs = localStorage.getItem(STORAGE_KEY_NAMAZ_LOG);
+      const allLogs: Record<string, DayNamazRecord> = savedLogs ? JSON.parse(savedLogs) : {};
+      const earliestRecorded = getEarliestRecordedDate(allLogs);
+
+      // If user has explicitly confirmed/set a start date
+      if (isInit && savedDate) {
+        return savedDate;
+      }
+
+      // If user has recorded prayers, start strictly from earliest recorded prayer
+      // (This automatically heals/prevents false Qaza from app install date when no prayers were logged)
+      if (earliestRecorded) {
+        try {
+          localStorage.setItem(STORAGE_KEY_TRACKING_START_DATE, earliestRecorded);
+          localStorage.setItem(STORAGE_KEY_TRACKING_INITIALIZED, 'true');
+        } catch {
+          // ignore
+        }
+        return earliestRecorded;
+      }
+
+      // If no prayers recorded yet, default placeholder is today
+      return getDateStr(new Date());
+    } catch {
+      return getDateStr(new Date());
+    }
+  });
+
+  const [isEditingStartDate, setIsEditingStartDate] = useState(false);
+  const [customStartDateInput, setCustomStartDateInput] = useState(trackingStartDate);
 
   const isInitialMount = useRef(true);
   const isExternalSync = useRef(false);
@@ -174,6 +226,21 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
             isExternalSync.current = true;
             return parsed;
           });
+
+          // Sync tracking state if updated
+          const earliest = getEarliestRecordedDate(parsed);
+          if (earliest) {
+            setIsTrackingActive(true);
+          }
+        }
+
+        const isInit = localStorage.getItem(STORAGE_KEY_TRACKING_INITIALIZED) === 'true';
+        if (isInit) {
+          setIsTrackingActive(true);
+          const savedStart = localStorage.getItem(STORAGE_KEY_TRACKING_START_DATE);
+          if (savedStart) {
+            setTrackingStartDate(savedStart);
+          }
         }
       } catch {
         // ignore
@@ -220,11 +287,44 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
     dateStr: currentSelectedDateStr,
   };
 
+  // Explicit action to set or start tracking from a given date
+  const handleStartTrackingFromDate = (dateToStart: string) => {
+    triggerHaptic(20);
+    setTrackingStartDate(dateToStart);
+    setIsTrackingActive(true);
+    setIsEditingStartDate(false);
+    try {
+      localStorage.setItem(STORAGE_KEY_TRACKING_START_DATE, dateToStart);
+      localStorage.setItem(STORAGE_KEY_TRACKING_INITIALIZED, 'true');
+      window.dispatchEvent(new Event('namaz_log_updated'));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Quick reset to start counting missed prayers only from today
+  const handleResetTrackingToToday = () => {
+    triggerHaptic(25);
+    handleStartTrackingFromDate(todayStr);
+  };
+
   // Toggle or set waqt status for the selected date
   const handleSetWaqtStatus = (waqt: WaqtKey, newStatus: WaqtStatus) => {
     triggerHaptic(20);
     const existingStatus = currentDayRecord[waqt] || 'none';
     const finalStatus = existingStatus === newStatus ? 'none' : newStatus;
+
+    // If tracking not active yet, activate it starting from the date user begins recording
+    if (!isTrackingActive) {
+      setIsTrackingActive(true);
+      setTrackingStartDate(currentSelectedDateStr);
+      try {
+        localStorage.setItem(STORAGE_KEY_TRACKING_START_DATE, currentSelectedDateStr);
+        localStorage.setItem(STORAGE_KEY_TRACKING_INITIALIZED, 'true');
+      } catch {
+        // ignore
+      }
+    }
 
     setLogs((prev) => ({
       ...prev,
@@ -237,6 +337,16 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
 
   const handleToggleTahajjud = () => {
     triggerHaptic(15);
+    if (!isTrackingActive) {
+      setIsTrackingActive(true);
+      setTrackingStartDate(currentSelectedDateStr);
+      try {
+        localStorage.setItem(STORAGE_KEY_TRACKING_START_DATE, currentSelectedDateStr);
+        localStorage.setItem(STORAGE_KEY_TRACKING_INITIALIZED, 'true');
+      } catch {
+        // ignore
+      }
+    }
     setLogs((prev) => ({
       ...prev,
       [currentSelectedDateStr]: {
@@ -264,6 +374,34 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
     : daysInCurrentMonth;
 
   const monthlyStats = useMemo(() => {
+    // If the user has not started tracking their prayers yet, do NOT calculate retroactive missed prayers!
+    if (!isTrackingActive) {
+      return {
+        activeTrackedDaysCount: 0,
+        totalEligibleWaqts: 0,
+        totalPrayed: 0,
+        totalExplicitMissed: 0,
+        totalUnrecordedWaqts: 0,
+        totalMissedCombined: 0,
+        netMissedRemaining: 0,
+        successRate: 0,
+        waqtMissedBreakdown: {
+          fajr: 0,
+          dhuhr: 0,
+          asr: 0,
+          maghrib: 0,
+          isha: 0,
+        },
+        waqtPrayedBreakdown: {
+          fajr: 0,
+          dhuhr: 0,
+          asr: 0,
+          maghrib: 0,
+          isha: 0,
+        },
+      };
+    }
+
     let totalPrayed = 0;
     let totalExplicitMissed = 0;
     let totalUnrecordedWaqts = 0;
@@ -295,7 +433,7 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
         hasExplicitUserAction = WAQT_LIST.some(({ id }) => rec[id] === 'prayed' || rec[id] === 'missed');
       }
 
-      // If the day is on/after tracking start, OR the user explicitly recorded entries for this past day
+      // If the day is on/after tracking start, OR the user explicitly recorded entries for this day
       const isEligibleDay = !isBeforeTrackingStarted || hasExplicitUserAction;
 
       if (isEligibleDay) {
@@ -310,7 +448,7 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
             totalExplicitMissed++;
             waqtMissedBreakdown[id]++;
           } else {
-            // Only count unrecorded waqts as missed if the day is ON or AFTER tracking start and is in the past
+            // Only count unrecorded waqts as missed if the day is ON or AFTER tracking start and is strictly in the past
             if (!isBeforeTrackingStarted && dStr < todayStr) {
               totalUnrecordedWaqts++;
               waqtMissedBreakdown[id]++;
@@ -337,7 +475,7 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
       waqtMissedBreakdown,
       waqtPrayedBreakdown,
     };
-  }, [logs, selectedDate, daysElapsedInMonth, todayStr, trackingStartDate, repaidQazaCount]);
+  }, [logs, selectedDate, daysElapsedInMonth, todayStr, trackingStartDate, repaidQazaCount, isTrackingActive]);
 
   // Navigate dates
   const handlePrevDay = () => {
@@ -637,21 +775,148 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
           </span>
         </div>
 
-        {/* Tracking Period Info Banner */}
-        <div className="p-3 rounded-2xl bg-[#F8E8ED]/60 dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#24386E] text-xs text-[#10235A] dark:text-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>
-              <strong>{language === 'bn' ? 'ট্র্যাকিং শুরু: ' : 'Tracking Started: '}</strong>
-              {formattedStartDate}
-            </span>
+        {/* Tracking Period Info Banner / Setup Banner */}
+        {!isTrackingActive ? (
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#F8E8ED] to-[#E9B7C3]/20 dark:from-[#10235A] dark:to-[#142042] border border-[#21409A]/30 space-y-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#21409A] text-white shadow-xs">
+                <Calendar className="h-4 w-4" />
+              </span>
+              <div className="space-y-1">
+                <h4 className="text-xs sm:text-sm font-bold text-[#10235A] dark:text-white">
+                  {language === 'bn' ? 'নামাজের হিসাব ও কাজা ট্র্যাকিং শুরু করুন' : 'Start Prayer & Qaza Tracking'}
+                </h4>
+                <p className="text-[11px] text-[#6B7280] dark:text-slate-300 leading-relaxed">
+                  {language === 'bn'
+                    ? 'আপনি যেদিন থেকে নামাজ হিসাব রাখা শুরু করবেন, শুধুমাত্র সেদিন থেকেই মিস হওয়া ওয়াক্ত কাজা হিসেবে গণনা করা হবে। অ্যাপ ইনস্টল করার দিন থেকে কোনো কাজা ধরা হবে না।'
+                    : 'Missed prayers (Qaza) will only be calculated starting from the day you begin tracking, NOT from when the app was installed.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                onClick={() => handleStartTrackingFromDate(todayStr)}
+                className="px-3.5 py-2 rounded-xl bg-[#21409A] hover:bg-[#10235A] active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                <span>{language === 'bn' ? 'আজ থেকেই হিসাব শুরু করুন' : 'Start Tracking from Today'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  triggerHaptic(10);
+                  setIsEditingStartDate((prev) => !prev);
+                  setCustomStartDateInput(todayStr);
+                }}
+                className="px-3 py-2 rounded-xl bg-white dark:bg-[#142042] hover:bg-[#F8E8ED] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E] font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
+                <span>{language === 'bn' ? 'অন্য তারিখ থেকে শুরু' : 'Choose Custom Start Date'}</span>
+              </button>
+            </div>
+
+            {isEditingStartDate && (
+              <div className="p-3 rounded-xl bg-white dark:bg-[#0E172E] border border-[#21409A]/40 flex flex-wrap items-center gap-2 mt-2">
+                <label className="text-xs font-bold text-[#10235A] dark:text-white">
+                  {language === 'bn' ? 'হিসাব শুরুর তারিখ:' : 'Tracking Start Date:'}
+                </label>
+                <input
+                  type="date"
+                  max={todayStr}
+                  value={customStartDateInput}
+                  onChange={(e) => setCustomStartDateInput(e.target.value)}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-[#E7D9DE] dark:border-[#24386E] bg-[#FCFAF8] dark:bg-[#10235A] text-[#10235A] dark:text-white font-mono"
+                />
+                <button
+                  onClick={() => handleStartTrackingFromDate(customStartDateInput)}
+                  className="px-3 py-1 bg-[#21409A] text-white text-xs font-bold rounded-lg hover:bg-[#10235A] cursor-pointer"
+                >
+                  {language === 'bn' ? 'শুরু করুন' : 'Set & Start'}
+                </button>
+                <button
+                  onClick={() => setIsEditingStartDate(false)}
+                  className="px-2 py-1 text-xs text-[#6B7280] dark:text-slate-400 hover:text-black cursor-pointer"
+                >
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </button>
+              </div>
+            )}
           </div>
-          <div className="text-[11px] text-[#6B7280] dark:text-slate-400">
-            {language === 'bn'
-              ? `হিসাবভুক্ত সময়: ${toBn(monthlyStats.activeTrackedDaysCount)} দিন (${toBn(monthlyStats.totalEligibleWaqts)} ওয়াক্ত)`
-              : `Included Period: ${monthlyStats.activeTrackedDaysCount} days (${monthlyStats.totalEligibleWaqts} waqts)`}
+        ) : (
+          <div className="p-3 rounded-2xl bg-[#F8E8ED]/70 dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#24386E] text-xs text-[#10235A] dark:text-slate-200 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span>
+                  <strong>{language === 'bn' ? 'হিসাব শুরুর তারিখ: ' : 'Tracking Started: '}</strong>
+                  <span className="font-semibold text-[#21409A] dark:text-emerald-300">{formattedStartDate}</span>
+                </span>
+              </div>
+
+              {/* Action buttons to edit start date or reset to today */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                <button
+                  onClick={() => {
+                    triggerHaptic(10);
+                    setCustomStartDateInput(trackingStartDate);
+                    setIsEditingStartDate((prev) => !prev);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E] text-[11px] font-bold text-[#10235A] dark:text-slate-200 hover:bg-[#F8E8ED] flex items-center gap-1 cursor-pointer transition-colors"
+                  title={language === 'bn' ? 'হিসাব শুরুর তারিখ পরিবর্তন করুন' : 'Change tracking start date'}
+                >
+                  <Edit2 className="w-3 h-3 text-[#21409A] dark:text-[#E9B7C3]" />
+                  <span>{language === 'bn' ? 'তারিখ বদলান' : 'Change Date'}</span>
+                </button>
+
+                <button
+                  onClick={handleResetTrackingToToday}
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E] text-[11px] font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-1 cursor-pointer transition-colors"
+                  title={language === 'bn' ? 'আজকের দিন থেকে নতুন করে হিসাব শুরু করুন' : 'Reset start date to today'}
+                >
+                  <RotateCcw className="w-3 h-3 text-rose-600" />
+                  <span>{language === 'bn' ? 'আজকে রিসেট' : 'Reset to Today'}</span>
+                </button>
+              </div>
+            </div>
+
+            {isEditingStartDate && (
+              <div className="p-3 rounded-xl bg-white dark:bg-[#0E172E] border border-[#21409A]/40 flex flex-wrap items-center gap-2">
+                <label className="text-xs font-bold text-[#10235A] dark:text-white">
+                  {language === 'bn' ? 'নতুন শুরুর তারিখ:' : 'New Start Date:'}
+                </label>
+                <input
+                  type="date"
+                  max={todayStr}
+                  value={customStartDateInput}
+                  onChange={(e) => setCustomStartDateInput(e.target.value)}
+                  className="px-2.5 py-1 text-xs rounded-lg border border-[#E7D9DE] dark:border-[#24386E] bg-[#FCFAF8] dark:bg-[#10235A] text-[#10235A] dark:text-white font-mono"
+                />
+                <button
+                  onClick={() => handleStartTrackingFromDate(customStartDateInput)}
+                  className="px-3 py-1 bg-[#21409A] text-white text-xs font-bold rounded-lg hover:bg-[#10235A] cursor-pointer"
+                >
+                  {language === 'bn' ? 'সংরক্ষণ' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setIsEditingStartDate(false)}
+                  className="px-2 py-1 text-xs text-[#6B7280] dark:text-slate-400 hover:text-black cursor-pointer"
+                >
+                  {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 text-[11px] text-[#6B7280] dark:text-slate-400 border-t border-[#E7D9DE]/60 dark:border-[#24386E]/50 pt-1.5">
+              <Info className="w-3.5 h-3.5 shrink-0 text-[#21409A] dark:text-[#E9B7C3]" />
+              <span>
+                {language === 'bn'
+                  ? `হিসাবভুক্ত সময়: ${toBn(monthlyStats.activeTrackedDaysCount)} দিন (${toBn(monthlyStats.totalEligibleWaqts)} ওয়াক্ত) • এই শুরুর তারিখের পূর্ববর্তী কোনো দিনের ওয়াক্ত কাজা হিসেবে গণনা করা হয়নি।`
+                  : `Included: ${monthlyStats.activeTrackedDaysCount} days (${monthlyStats.totalEligibleWaqts} waqts) • Prayers prior to this date are not counted as Qaza.`}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Big Highlights Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
