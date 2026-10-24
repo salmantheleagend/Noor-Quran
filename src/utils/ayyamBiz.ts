@@ -55,9 +55,11 @@ export function getAyyamBizStatus(currentDate: Date = new Date()): AyyamBizStatu
   const day14Bn = formatGregorianBn(day14Date);
   const day15Bn = formatGregorianBn(day15Date);
 
-  const isActive = hDay >= 10 && hDay <= 15;
-  const isUpcoming = hDay >= 10 && hDay <= 12;
+  // Shows strictly 2 days before the fast (Hijri 11 & 12) and during the 3 fast days (Hijri 13, 14, 15)
+  // Disappears completely after Hijri 15 until 2 days before next month's fast
+  const isUpcoming = hDay === 11 || hDay === 12;
   const isFastingToday = hDay >= 13 && hDay <= 15;
+  const isActive = isUpcoming || isFastingToday;
   const currentFastDay = hDay === 13 ? 1 : hDay === 14 ? 2 : hDay === 15 ? 3 : undefined;
   const daysUntilStart = Math.max(0, 13 - hDay);
 

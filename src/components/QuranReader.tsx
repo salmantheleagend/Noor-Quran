@@ -673,34 +673,34 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
           TOP UNIFIED NAVIGATION BAR
           ========================================================================= */}
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0E1416]/95 backdrop-blur-md border-b border-[#E7D9DE] dark:border-[#22353B] transition-colors">
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-1.5 flex items-center justify-between gap-1 sm:gap-2">
           {/* Left: Mode Toggle & Surah Selector */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
             {/* Reading Mode Segmented Pill */}
-            <div className="p-0.5 rounded-2xl bg-[#F8E8ED] dark:bg-[#18282D] border border-[#E7D9DE] dark:border-[#22353B] flex items-center text-xs">
+            <div className="p-0.5 rounded-2xl bg-[#F8E8ED] dark:bg-[#18282D] border border-[#E7D9DE] dark:border-[#22353B] flex items-center text-[11px] sm:text-xs shrink-0">
               <button
                 onClick={() => handleToggleMode('mushaf')}
-                className={`py-1.5 px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`py-1 px-2.5 sm:px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   readingMode === 'mushaf'
                     ? 'bg-[#083B40] dark:bg-[#2DD4BF] text-white dark:text-[#0E1416] shadow-xs'
                     : 'text-[#10235A] dark:text-[#EAF2F1] hover:text-[#083B40]'
                 }`}
                 title="মুসহাফ পেজ মোড (বইয়ের মতো পাতা)"
               >
-                <Book className="w-3.5 h-3.5" />
+                <Book className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>মুসহাফ</span>
               </button>
 
               <button
                 onClick={() => handleToggleMode('study')}
-                className={`py-1.5 px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`py-1 px-2.5 sm:px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   readingMode === 'study'
                     ? 'bg-[#21409A] text-white shadow-xs'
                     : 'text-[#10235A] dark:text-[#E9B7C3] hover:text-[#21409A]'
                 }`}
                 title="স্টাডি মোড (আয়াত কার্ড ও অর্থ)"
               >
-                <Layers className="w-3.5 h-3.5" />
+                <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>স্টাডি</span>
               </button>
             </div>
@@ -711,26 +711,26 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                 triggerHaptic(15);
                 setShowSurahModal(true);
               }}
-              className="py-1.5 px-2.5 sm:px-3 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 text-xs font-semibold text-[#10235A] dark:text-white hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer min-h-[38px]"
+              className="py-1 px-2 sm:px-3 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 text-xs font-semibold text-[#10235A] dark:text-white hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all flex items-center gap-1 shadow-2xs cursor-pointer min-h-[34px] sm:min-h-[38px] max-w-[125px] sm:max-w-none"
             >
-              <span className="font-bold">
+              <span className="font-bold truncate">
                 {currentSurahMeta.number}. {currentSurahMeta.nameBangla}
               </span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
+              <ChevronDown className="w-3 h-3 text-[#21409A] dark:text-[#E9B7C3] shrink-0" />
             </button>
           </div>
 
           {/* Right: Search, Bookmark, Reading Settings */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <button
               onClick={() => {
                 triggerHaptic(15);
                 setShowSurahModal(true);
               }}
-              className="w-9 h-9 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-center text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all shadow-2xs cursor-pointer"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-center text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all shadow-2xs cursor-pointer"
               title="সূরা খুঁজুন"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
 
             <button
@@ -1236,7 +1236,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                     )}
 
                     {/* Controls: Listen, Bookmark, Share */}
-                    <div className="pt-2 border-t border-[#E7D9DE]/60 dark:border-[#21409A]/30 flex items-center justify-center gap-6 text-xs font-semibold text-[#10235A] dark:text-[#E9B7C3]">
+                    <div className="pt-2 border-t border-[#E7D9DE]/60 dark:border-[#21409A]/30 flex items-center justify-around sm:justify-center gap-2 sm:gap-6 text-xs font-semibold text-[#10235A] dark:text-[#E9B7C3]">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

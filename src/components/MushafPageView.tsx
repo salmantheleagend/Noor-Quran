@@ -338,27 +338,29 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
     }
   };
 
-  // Typography settings based on Mushaf edition
+  // Typography settings based on Mushaf edition (scaled responsively for mobile)
   const getEditionTypography = () => {
+    const isMobile = typeof window !== 'undefined' ? window.innerWidth < 640 : false;
+    const mobileScale = isMobile ? 0.88 : 1.0;
     switch (mushafEdition) {
       case 'hafezi_15':
         return {
-          fontSize: `${Math.round(26 * (zoomScale / 100))}px`,
-          lineHeight: '2.85',
+          fontSize: `${Math.round(26 * mobileScale * (zoomScale / 100))}px`,
+          lineHeight: isMobile ? '2.5' : '2.85',
           letterSpacing: '0.2px',
         };
       case 'nurani_easy':
         return {
-          fontSize: `${Math.round(30 * (zoomScale / 100))}px`,
-          lineHeight: '3.15',
-          letterSpacing: '0.35px',
+          fontSize: `${Math.round(29 * mobileScale * (zoomScale / 100))}px`,
+          lineHeight: isMobile ? '2.7' : '3.15',
+          letterSpacing: '0.3px',
         };
       case 'tajweed':
       case 'standard':
       default:
         return {
-          fontSize: `${Math.round(27 * (zoomScale / 100))}px`,
-          lineHeight: '2.95',
+          fontSize: `${Math.round(26 * mobileScale * (zoomScale / 100))}px`,
+          lineHeight: isMobile ? '2.6' : '2.95',
           letterSpacing: '0.25px',
         };
     }
@@ -376,14 +378,14 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
       <div
         key={`mushaf-page-card-${pNum}`}
         id={`mushaf-page-${pNum}`}
-        className="relative w-full max-w-[700px] px-2 sm:px-3 cursor-pointer scroll-mt-16"
+        className="relative w-full max-w-[700px] px-1 sm:px-3 cursor-pointer scroll-mt-16"
         onClick={() => {
           onToggleDistractionFree();
         }}
       >
         {/* Outer Neat Geometric Border Frame with Clean Background */}
         <div
-          className={`relative rounded-3xl transition-all duration-300 shadow-md border-2 border-[#0F5F62]/35 dark:border-[#2DD4BF]/30 p-1 sm:p-1.5 ${
+          className={`relative rounded-2xl sm:rounded-3xl transition-all duration-300 shadow-md border-2 border-[#0F5F62]/35 dark:border-[#2DD4BF]/30 p-1 sm:p-1.5 ${
             colorBlindMode ? 'tajweed-colorblind' : ''
           }`}
           style={{
@@ -391,7 +393,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
           }}
         >
           {/* Inner Geometric Double Border Box with Corner Rosettes */}
-          <div className="relative p-3 sm:p-5 rounded-[22px] border border-[#0F5F62]/20 dark:border-[#2DD4BF]/25 bg-white dark:bg-[#0B1536] text-[#111827] dark:text-[#F9FAFB] shadow-inner">
+          <div className="relative p-2 sm:p-4 rounded-[16px] sm:rounded-[22px] border border-[#0F5F62]/20 dark:border-[#2DD4BF]/25 bg-white dark:bg-[#0B1536] text-[#111827] dark:text-[#F9FAFB] shadow-inner">
             {/* 4 Islamic Geometric Corner Rosette Accents */}
             <span className="absolute top-1.5 left-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
             <span className="absolute top-1.5 right-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
@@ -399,7 +401,7 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
             <span className="absolute bottom-1.5 right-2 text-[10px] text-[#0F5F62]/40 dark:text-[#2DD4BF]/40 select-none pointer-events-none">❖</span>
 
             {/* Content Container */}
-            <div className="p-2 sm:p-3.5 rounded-xl border border-[#D7E9E7]/80 dark:border-[#1E3A5F] min-h-[520px] flex flex-col justify-between">
+            <div className="p-1.5 sm:p-3 rounded-xl border border-[#D7E9E7]/80 dark:border-[#1E3A5F] min-h-[440px] sm:min-h-[520px] flex flex-col justify-between">
               <div>
                 {/* PAGE TOP MARGIN */}
                 <div className="pb-2 mb-2 border-b border-[#E7D9DE] dark:border-[#21409A]/30 flex items-center justify-between text-xs text-[#0F5F62] dark:text-[#B9E2DD]">

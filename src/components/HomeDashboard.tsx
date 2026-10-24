@@ -840,128 +840,109 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 3.5. AYYAM-E-BIZ (13, 14, 15 HIJRI) MONTHLY SUNNAH FASTING NOTICE */}
+      {/* 3.5. AYYAM-E-BIZ (13, 14, 15 HIJRI) MINIMAL PHONE-FRIENDLY CARD */}
       {ayyamBiz.isActive && !ayyamBizDismissed && (
-        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-[#0F5F62] via-[#0D4E50] to-[#072F31] text-white p-4 sm:p-4.5 shadow-md border border-[#1FB5A2]/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#B9E2DD]/20 border border-[#B9E2DD]/30 flex items-center justify-center shrink-0 text-[#B9E2DD] shadow-2xs">
-                <Moon className="w-5 h-5 fill-current" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-sm font-bold text-white font-bengali">
-                    {language === 'bn' ? 'আইয়ামে বীজের সুন্নাত রোজা' : 'Ayyam-e-Biz Sunnah Fasting'}
-                  </h3>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+        <div className="rounded-2xl bg-linear-to-r from-[#0F5F62] via-[#0D4E50] to-[#072F31] text-white p-3 shadow-xs border border-[#1FB5A2]/30 space-y-2 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-7 h-7 rounded-xl bg-[#B9E2DD]/20 text-[#B9E2DD] flex items-center justify-center shrink-0 text-xs">
+                🌙
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h4 className="text-xs font-bold text-white truncate">
+                    {language === 'bn' ? 'আইয়ামে বীজের সুন্নাত রোজা' : 'Ayyam-e-Biz Fasting'}
+                  </h4>
+                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold border ${
                     ayyamBiz.isFastingToday
                       ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40 animate-pulse'
                       : 'bg-amber-500/25 text-amber-200 border-amber-400/40'
                   }`}>
                     {ayyamBiz.isFastingToday
-                      ? (language === 'bn' ? `আজ ${toBn(ayyamBiz.currentFastDay || 1)}ম রোজা (${toBn(ayyamBiz.hijriDay)} ${ayyamBiz.hijriMonthBn})` : `Today Fast ${ayyamBiz.currentFastDay || 1} (${ayyamBiz.hijriDay} ${ayyamBiz.hijriMonthEn})`)
-                      : (language === 'bn' ? `আর ${toBn(ayyamBiz.daysUntilStart)} দিন বাকি • প্রস্তুতি নিন` : `${ayyamBiz.daysUntilStart} days left`)}
+                      ? (language === 'bn' ? `আজ ${toBn(ayyamBiz.currentFastDay || 1)}ম রোজা` : `Fast Day ${ayyamBiz.currentFastDay || 1}`)
+                      : (language === 'bn' ? `আর ${toBn(ayyamBiz.daysUntilStart)} দিন বাকি` : `${ayyamBiz.daysUntilStart}d left`)}
                   </span>
                 </div>
-                <p className="text-xs text-[#B9E2DD]/90 mt-0.5">
+                <p className="text-[10px] text-[#B9E2DD]/90 truncate">
                   {language === 'bn'
-                    ? `প্রতি চন্দ্রমাসের ১৩, ১৪ ও ১৫ তারিখ (${ayyamBiz.hijriMonthBn} ${toBn(ayyamBiz.hijriYear)} হিজরি)`
-                    : `13th, 14th & 15th of ${ayyamBiz.hijriMonthEn} ${ayyamBiz.hijriYear} AH`}
+                    ? `১৩, ১৪ ও ১৫ ${ayyamBiz.hijriMonthBn} (${ayyamBiz.dates.day13Date.getDate()}–${ayyamBiz.dates.day15Date.getDate()} তারিখ)`
+                    : `13th–15th ${ayyamBiz.hijriMonthEn}`}
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                triggerHaptic(10);
-                setAyyamBizDismissed(true);
-              }}
-              className="text-[#B9E2DD]/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-              title={language === 'bn' ? 'লুকান' : 'Dismiss'}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* 3 Days Schedule Dates Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
-            <div className={`p-2.5 rounded-2xl border backdrop-blur-xs transition-all ${
-              ayyamBiz.hijriDay === 13
-                ? 'bg-[#B9E2DD]/25 border-[#B9E2DD] text-white ring-2 ring-[#B9E2DD]/50'
-                : 'bg-black/25 border-white/10 text-white/90'
-            }`}>
-              <div className="flex items-center justify-between text-[11px] text-[#B9E2DD] font-semibold mb-1">
-                <span>{language === 'bn' ? '১ম রোজা (১৩ হিজরি)' : 'Day 1 (13 Hijri)'}</span>
-                {ayyamBiz.hijriDay === 13 && <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.2 rounded-full font-bold">{language === 'bn' ? 'আজ' : 'Today'}</span>}
-              </div>
-              <p className="font-bold text-white text-xs sm:text-sm">{ayyamBiz.dates.day13Bn}</p>
-            </div>
-
-            <div className={`p-2.5 rounded-2xl border backdrop-blur-xs transition-all ${
-              ayyamBiz.hijriDay === 14
-                ? 'bg-[#B9E2DD]/25 border-[#B9E2DD] text-white ring-2 ring-[#B9E2DD]/50'
-                : 'bg-black/25 border-white/10 text-white/90'
-            }`}>
-              <div className="flex items-center justify-between text-[11px] text-[#B9E2DD] font-semibold mb-1">
-                <span>{language === 'bn' ? '২য় রোজা (১৪ হিজরি)' : 'Day 2 (14 Hijri)'}</span>
-                {ayyamBiz.hijriDay === 14 && <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.2 rounded-full font-bold">{language === 'bn' ? 'আজ' : 'Today'}</span>}
-              </div>
-              <p className="font-bold text-white text-xs sm:text-sm">{ayyamBiz.dates.day14Bn}</p>
-            </div>
-
-            <div className={`p-2.5 rounded-2xl border backdrop-blur-xs transition-all ${
-              ayyamBiz.hijriDay === 15
-                ? 'bg-[#B9E2DD]/25 border-[#B9E2DD] text-white ring-2 ring-[#B9E2DD]/50'
-                : 'bg-black/25 border-white/10 text-white/90'
-            }`}>
-              <div className="flex items-center justify-between text-[11px] text-[#B9E2DD] font-semibold mb-1">
-                <span>{language === 'bn' ? '৩য় রোজা (১৫ হিজরি)' : 'Day 3 (15 Hijri)'}</span>
-                {ayyamBiz.hijriDay === 15 && <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.2 rounded-full font-bold">{language === 'bn' ? 'আজ' : 'Today'}</span>}
-              </div>
-              <p className="font-bold text-white text-xs sm:text-sm">{ayyamBiz.dates.day15Bn}</p>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(10);
+                  setShowAyyamBizNiyyah((prev) => !prev);
+                }}
+                className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[#B9E2DD] text-[10px] font-bold transition-colors cursor-pointer"
+              >
+                {showAyyamBizNiyyah
+                  ? (language === 'bn' ? 'সংক্ষেপ' : 'Less')
+                  : (language === 'bn' ? 'নিয়ত ও তারিখ' : 'Dates')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(10);
+                  setAyyamBizDismissed(true);
+                }}
+                className="text-[#B9E2DD]/60 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                title={language === 'bn' ? 'লুকান' : 'Dismiss'}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Authentic Hadith Reference */}
-          <div className="p-2.5 rounded-2xl bg-black/30 border border-white/10 text-xs space-y-1">
-            <p className="text-white/95 leading-relaxed font-bengali">
-              "{ayyamBiz.hadithBn}"
-            </p>
-            <p className="text-[10px] text-[#B9E2DD] font-mono">
-              — {ayyamBiz.hadithSourceBn}
-            </p>
-          </div>
-
-          {/* Niyyah Accordion Toggle */}
-          <div className="pt-0.5">
-            <button
-              onClick={() => {
-                triggerHaptic(10);
-                setShowAyyamBizNiyyah((prev) => !prev);
-              }}
-              className="w-full py-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
-            >
-              <span>{language === 'bn' ? 'রোজার নিয়ত ও নিয়ম দেখুন' : 'View Fasting Intention'}</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAyyamBizNiyyah ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showAyyamBizNiyyah && (
-              <div className="mt-2 p-3 rounded-2xl bg-black/40 border border-white/15 space-y-2 text-xs">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-[#B9E2DD]">{language === 'bn' ? 'আরবি নিয়ত' : 'Arabic Intention'}:</span>
-                  <p className="font-uthmani text-base text-right text-white font-bold leading-relaxed pt-1" dir="rtl">
-                    {ayyamBiz.niyyahAr}
-                  </p>
+          {/* Minimal Expandable Drawer: Dates & Niyyah */}
+          {showAyyamBizNiyyah && (
+            <div className="pt-2 border-t border-white/15 space-y-2 text-xs animate-in fade-in duration-150">
+              {/* 3 Days compact row */}
+              <div className="grid grid-cols-3 gap-1 text-[10px]">
+                <div className={`p-1.5 rounded-lg border text-center ${
+                  ayyamBiz.hijriDay === 13
+                    ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold'
+                    : 'bg-black/20 border-white/10 text-white/80'
+                }`}>
+                  <span className="block text-[#B9E2DD]">১ম (১৩ হিজরি)</span>
+                  <span className="block font-semibold">{ayyamBiz.dates.day13Bn.split(',')[1] || ayyamBiz.dates.day13Bn}</span>
                 </div>
-                <div className="pt-1 border-t border-white/10">
-                  <span className="text-[10px] uppercase font-bold text-[#B9E2DD]">{language === 'bn' ? 'বাংলা উচ্চারণ ও অর্থ' : 'Meaning'}:</span>
-                  <p className="text-white/90 font-bengali leading-relaxed mt-0.5">
-                    {ayyamBiz.niyyahBn}
-                  </p>
+                <div className={`p-1.5 rounded-lg border text-center ${
+                  ayyamBiz.hijriDay === 14
+                    ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold'
+                    : 'bg-black/20 border-white/10 text-white/80'
+                }`}>
+                  <span className="block text-[#B9E2DD]">২য় (১৪ হিজরি)</span>
+                  <span className="block font-semibold">{ayyamBiz.dates.day14Bn.split(',')[1] || ayyamBiz.dates.day14Bn}</span>
+                </div>
+                <div className={`p-1.5 rounded-lg border text-center ${
+                  ayyamBiz.hijriDay === 15
+                    ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold'
+                    : 'bg-black/20 border-white/10 text-white/80'
+                }`}>
+                  <span className="block text-[#B9E2DD]">৩য় (১৫ হিজরি)</span>
+                  <span className="block font-semibold">{ayyamBiz.dates.day15Bn.split(',')[1] || ayyamBiz.dates.day15Bn}</span>
                 </div>
               </div>
-            )}
-          </div>
+
+              {/* Niyyah & Virtue */}
+              <div className="p-2 rounded-xl bg-black/30 border border-white/10 space-y-1 text-[11px]">
+                <p className="font-uthmani text-sm text-right text-white font-bold" dir="rtl">
+                  {ayyamBiz.niyyahAr}
+                </p>
+                <p className="text-[#B9E2DD] font-bengali text-[10px] leading-tight">
+                  {ayyamBiz.niyyahBn}
+                </p>
+                <p className="text-white/80 text-[10px] pt-1 border-t border-white/10 italic">
+                  "{ayyamBiz.hadithBn}" — <span className="text-[#B9E2DD] not-italic">{ayyamBiz.hadithSourceBn}</span>
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

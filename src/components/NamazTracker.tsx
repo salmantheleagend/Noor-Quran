@@ -37,6 +37,7 @@ export interface DayNamazRecord {
 
 export const STORAGE_KEY_NAMAZ_LOG = 'noor_quran_namaz_tracker_log_v2';
 export const STORAGE_KEY_QAZA_COUNT = 'noor_quran_namaz_qaza_repaid_v2';
+export const STORAGE_KEY_QAZA_REPAID_BY_WAQT = 'noor_quran_namaz_qaza_repaid_by_waqt_v2';
 export const STORAGE_KEY_TRACKING_START_DATE = 'noor_quran_namaz_tracking_start_date';
 export const STORAGE_KEY_TRACKING_INITIALIZED = 'noor_quran_namaz_tracking_initialized';
 
@@ -132,16 +133,51 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
     return {};
   });
 
-  // Repaid Qaza count
-  const [repaidQazaCount, setRepaidQazaCount] = useState<number>(() => {
+  // Repaid Qaza counts waqt-by-waqt (Fajr, Dhuhr, Asr, Maghrib, Isha)
+  const [repaidByWaqt, setRepaidByWaqt] = useState<Record<WaqtKey, number>>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_QAZA_COUNT);
-      if (saved) return Number(saved) || 0;
+      const saved = localStorage.getItem(STORAGE_KEY_QAZA_REPAID_BY_WAQT);
+      if (saved) return JSON.parse(saved);
+      const oldVal = Number(localStorage.getItem(STORAGE_KEY_QAZA_COUNT)) || 0;
+      if (oldVal > 0) {
+        return { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 };
+      }
     } catch {
       // ignore
     }
-    return 0;
+    return { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 };
   });
+
+  const [showWaqtRepaySelector, setShowWaqtRepaySelector] = useState(false);
+  const [repayFeedback, setRepayFeedback] = useState<string | null>(null);
+
+  const totalRepaidCount = useMemo(() => {
+    return Object.values(repaidByWaqt).reduce((a, b) => a + (b || 0), 0);
+  }, [repaidByWaqt]);
+
+  const handleRepayWaqt = (waqtId: WaqtKey) => {
+    triggerHaptic(25);
+    setRepaidByWaqt((prev) => ({
+      ...prev,
+      [waqtId]: (prev[waqtId] || 0) + 1,
+    }));
+    const wItem = WAQT_LIST.find((w) => w.id === waqtId);
+    const name = wItem ? (language === 'bn' ? wItem.nameBn : wItem.nameEn) : waqtId;
+    setRepayFeedback(
+      language === 'bn'
+        ? `✓ ${name}-এর ১ ওয়াক্ত কাজা আদায় সম্পন্ন হয়েছে`
+        : `✓ 1 ${name} missed prayer marked as repaid`
+    );
+    setTimeout(() => setRepayFeedback(null), 3000);
+  };
+
+  const handleUndoRepayWaqt = (waqtId: WaqtKey) => {
+    triggerHaptic(15);
+    setRepaidByWaqt((prev) => ({
+      ...prev,
+      [waqtId]: Math.max(0, (prev[waqtId] || 0) - 1),
+    }));
+  };
 
   // Date formatting helper
   const getDateStr = (d: Date) => {
@@ -274,11 +310,14 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY_QAZA_COUNT, repaidQazaCount.toString());
+      localStorage.setItem(STORAGE_KEY_QAZA_REPAID_BY_WAQT, JSON.stringify(repaidByWaqt));
+      const total = Object.values(repaidByWaqt).reduce((a, b) => a + (b || 0), 0);
+      localStorage.setItem(STORAGE_KEY_QAZA_COUNT, total.toString());
+      window.dispatchEvent(new Event('namaz_log_updated'));
     } catch (e) {
-      console.warn('Failed to save qaza count', e);
+      console.warn('Failed to save qaza repaid by waqt', e);
     }
-  }, [repaidQazaCount]);
+  }, [repaidByWaqt]);
 
   const currentSelectedDateStr = useMemo(() => getDateStr(selectedDate), [selectedDate]);
   const isSelectedDateToday = currentSelectedDateStr === todayStr;
@@ -356,10 +395,13 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
     }));
   };
 
-  // Repay a Qaza waqt
-  const handleRepayQaza = () => {
+  // Quick repay helper if needed
+  const handleRepayGeneralFirstMissed = () => {
     triggerHaptic(30);
-    setRepaidQazaCount((prev) => prev + 1);
+    // Find the waqt with highest net remaining missed, or default to fajr
+    const waqtKeys: WaqtKey[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+    const target = waqtKeys.find((k) => (monthlyStats.waqtNetRemainingBreakdown[k] || 0) > 0) || 'fajr';
+    handleRepayWaqt(target);
   };
 
   // Monthly Calculations: strictly respect tracking start date so past unrecorded days aren't falsely marked missed!
@@ -393,6 +435,13 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
           isha: 0,
         },
         waqtPrayedBreakdown: {
+          fajr: 0,
+          dhuhr: 0,
+          asr: 0,
+          maghrib: 0,
+          isha: 0,
+        },
+        waqtNetRemainingBreakdown: {
           fajr: 0,
           dhuhr: 0,
           asr: 0,
@@ -460,8 +509,16 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
 
     const totalEligibleWaqts = activeTrackedDaysCount * 5;
     const totalMissedCombined = totalExplicitMissed + totalUnrecordedWaqts;
-    const netMissedRemaining = Math.max(0, totalMissedCombined - repaidQazaCount);
+    const netMissedRemaining = Math.max(0, totalMissedCombined - totalRepaidCount);
     const successRate = totalEligibleWaqts > 0 ? Math.round((totalPrayed / totalEligibleWaqts) * 100) : 0;
+
+    const waqtNetRemainingBreakdown: Record<WaqtKey, number> = {
+      fajr: Math.max(0, waqtMissedBreakdown.fajr - (repaidByWaqt.fajr || 0)),
+      dhuhr: Math.max(0, waqtMissedBreakdown.dhuhr - (repaidByWaqt.dhuhr || 0)),
+      asr: Math.max(0, waqtMissedBreakdown.asr - (repaidByWaqt.asr || 0)),
+      maghrib: Math.max(0, waqtMissedBreakdown.maghrib - (repaidByWaqt.maghrib || 0)),
+      isha: Math.max(0, waqtMissedBreakdown.isha - (repaidByWaqt.isha || 0)),
+    };
 
     return {
       activeTrackedDaysCount,
@@ -474,8 +531,9 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
       successRate,
       waqtMissedBreakdown,
       waqtPrayedBreakdown,
+      waqtNetRemainingBreakdown,
     };
-  }, [logs, selectedDate, daysElapsedInMonth, todayStr, trackingStartDate, repaidQazaCount, isTrackingActive]);
+  }, [logs, selectedDate, daysElapsedInMonth, todayStr, trackingStartDate, totalRepaidCount, repaidByWaqt, isTrackingActive]);
 
   // Navigate dates
   const handlePrevDay = () => {
@@ -968,40 +1026,62 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
               {language === 'bn' ? toBn(monthlyStats.netMissedRemaining) : monthlyStats.netMissedRemaining}
             </span>
             <span className="text-[10px] text-[#21409A] dark:text-[#E9B7C3] block font-bold">
-              {language === 'bn' ? `(পরিশোধিত: ${toBn(repaidQazaCount)})` : `(Repaid: ${repaidQazaCount})`}
+              {language === 'bn' ? `(পরিশোধিত: ${toBn(totalRepaidCount)})` : `(Repaid: ${totalRepaidCount})`}
             </span>
           </div>
         </div>
 
         {/* Detailed Breakdown per Waqt */}
         <div className="space-y-1.5 p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#10235A]/30 border border-[#E7D9DE] dark:border-[#1C2D5A] text-xs">
-          <span className="font-bold text-[#10235A] dark:text-slate-200 block mb-2">
-            {language === 'bn' ? 'ওয়াক্তভিত্তিক মিস হওয়া নামাজের বিবরণ:' : 'Waqt-by-Waqt Breakdown:'}
-          </span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-bold text-[#10235A] dark:text-slate-200">
+              {language === 'bn' ? 'ওয়াক্তভিত্তিক সালাত ও কাজার স্থিতি:' : 'Waqt-by-Waqt Status & Qaza:'}
+            </span>
+            <span className="text-[10px] text-[#21409A] dark:text-[#E9B7C3] font-semibold">
+              {language === 'bn' ? `মোট পরিশোধ: ${toBn(totalRepaidCount)} ওয়াক্ত` : `Total Repaid: ${totalRepaidCount}`}
+            </span>
+          </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
             {WAQT_LIST.map((w) => {
               const missed = monthlyStats.waqtMissedBreakdown[w.id];
               const prayed = monthlyStats.waqtPrayedBreakdown[w.id];
+              const repaid = repaidByWaqt[w.id] || 0;
+              const netRemaining = monthlyStats.waqtNetRemainingBreakdown[w.id];
 
               return (
                 <div
                   key={w.id}
-                  className={`p-2 rounded-xl border ${
-                    missed > 0
+                  className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                    netRemaining > 0
                       ? 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900 text-rose-900 dark:text-rose-200'
                       : 'bg-white dark:bg-[#142042] border-[#E7D9DE] dark:border-[#24386E] text-[#10235A] dark:text-slate-300'
                   }`}
                 >
-                  <span className="font-bold block">{language === 'bn' ? w.nameBn : w.nameEn}</span>
-                  <div className="flex items-center justify-center gap-1.5 mt-1 font-mono text-[11px]">
-                    <span className="text-[#21409A] dark:text-[#E9B7C3] font-bold">
-                      ✓{language === 'bn' ? toBn(prayed) : prayed}
-                    </span>
-                    <span>·</span>
-                    <span className="text-rose-600 font-bold">
-                      ✕{language === 'bn' ? toBn(missed) : missed}
-                    </span>
+                  <span className="font-bold text-xs block mb-1">{language === 'bn' ? w.nameBn : w.nameEn}</span>
+                  <div className="text-[10px] space-y-0.5 font-mono">
+                    <div className="text-[#21409A] dark:text-[#E9B7C3] font-semibold">
+                      ✓ {language === 'bn' ? `পড়েছেন ${toBn(prayed)}` : `Prayed ${prayed}`}
+                    </div>
+                    <div className="text-rose-600 dark:text-rose-400 font-semibold">
+                      ✕ {language === 'bn' ? `মিস ${toBn(missed)}` : `Missed ${missed}`}
+                    </div>
+                    {repaid > 0 && (
+                      <div className="text-teal-600 dark:text-teal-400 font-bold">
+                        ↺ {language === 'bn' ? `আদায় ${toBn(repaid)}` : `Repaid ${repaid}`}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-1.5 pt-1 border-t border-black/5 dark:border-white/5 text-[10px] font-bold">
+                    {netRemaining > 0 ? (
+                      <span className="text-rose-700 dark:text-rose-300">
+                        {language === 'bn' ? `বাকি: ${toBn(netRemaining)}` : `Net: ${netRemaining}`}
+                      </span>
+                    ) : (
+                      <span className="text-emerald-700 dark:text-emerald-400">
+                        {language === 'bn' ? 'কাজা নেই' : 'Clear'}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -1009,40 +1089,105 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
           </div>
         </div>
 
-        {/* Repay Qaza Action Bar */}
-        <div className="p-3 rounded-2xl bg-[#F8E8ED] dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E] flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <div>
-            <span className="text-xs font-bold text-[#10235A] dark:text-white block">
-              {language === 'bn' ? 'কাজা নামাজ আদায় করেছেন?' : 'Repaid any missed (Qaza) prayer?'}
-            </span>
-            <span className="text-[10px] text-[#6B7280] dark:text-slate-300 block">
-              {language === 'bn'
-                ? 'মিস হওয়া কোনো ওয়াক্ত আদায় করা হলে এখানে ক্লিক করে বাকি কাজার সংখ্যা কমিয়ে নিন'
-                : 'Click here whenever you make up a missed prayer to reduce your remaining count'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {repaidQazaCount > 0 && (
-              <button
-                onClick={() => {
-                  triggerHaptic(15);
-                  setRepaidQazaCount((p) => Math.max(0, p - 1));
-                }}
-                className="px-2.5 py-1 rounded-xl bg-white dark:bg-[#10235A] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E] text-xs font-bold cursor-pointer"
-                title={language === 'bn' ? '১টি কাজা পরিশোধ কমান' : 'Undo 1 Qaza'}
-              >
-                {language === 'bn' ? '-১' : '-1'}
-              </button>
-            )}
+        {/* Repay Qaza Section: Waqt-by-Waqt selection (User requested) */}
+        <div className="p-3.5 rounded-2xl bg-[#F8E8ED] dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E] space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="text-xs font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
+                {language === 'bn' ? 'কাজা নামাজ আদায় করেছেন? (ওয়াক্ত নির্বাচন)' : 'Repaid a missed prayer? (Select Waqt)'}
+              </span>
+              <span className="text-[10px] text-[#6B7280] dark:text-slate-300 block mt-0.5">
+                {language === 'bn'
+                  ? 'নিচের ৫টি ওয়াক্ত থেকে যে সালাতের কাজা আদায় করেছেন সেটি নির্বাচন করে পরিশোধ করুন'
+                  : 'Select which of the 5 prayers you repaid to accurately adjust your remaining count'}
+              </span>
+            </div>
 
             <button
-              onClick={handleRepayQaza}
-              className="px-4 py-2 rounded-xl bg-[#21409A] hover:bg-[#10235A] active:scale-95 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              onClick={() => {
+                triggerHaptic(15);
+                setShowWaqtRepaySelector((prev) => !prev);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-[#21409A] text-white hover:bg-[#10235A] text-xs font-bold transition-all flex items-center gap-1 self-start sm:self-auto cursor-pointer shadow-xs"
             >
-              <Check className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? '১ ওয়াক্ত কাজা আদায় সম্পন্ন' : 'Mark 1 Qaza Repaid'}</span>
+              <span>
+                {showWaqtRepaySelector
+                  ? (language === 'bn' ? 'ওয়াক্ত তালিকা লুকান' : 'Hide Waqt Selector')
+                  : (language === 'bn' ? '৫টি ওয়াক্তের অপশন দেখুন' : 'Show 5 Waqt Options')}
+              </span>
+              <span className="text-xs">{showWaqtRepaySelector ? '▲' : '▼'}</span>
             </button>
+          </div>
+
+          {/* Toast feedback for instant confirmation */}
+          {repayFeedback && (
+            <div className="p-2 px-3 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-800 text-teal-800 dark:text-teal-200 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+              <Check className="w-4 h-4 text-teal-600" />
+              <span>{repayFeedback}</span>
+            </div>
+          )}
+
+          {/* 5 WAQTS SELECTION GRID - Always accessible or expanded */}
+          <div className={`${showWaqtRepaySelector ? 'block' : 'hidden sm:block'} pt-1`}>
+            <div className="text-[11px] font-bold text-[#10235A] dark:text-slate-200 mb-2">
+              {language === 'bn' ? 'যে ওয়াক্তের কাজা আদায় করেছেন নির্বাচন করুন:' : 'Select the waqt you just repaid:'}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+              {WAQT_LIST.map((w) => {
+                const repaid = repaidByWaqt[w.id] || 0;
+                const missed = monthlyStats.waqtMissedBreakdown[w.id];
+                const net = monthlyStats.waqtNetRemainingBreakdown[w.id];
+
+                return (
+                  <div
+                    key={w.id}
+                    className="p-2.5 rounded-xl bg-white dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A] flex flex-col justify-between shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-bold text-xs text-[#10235A] dark:text-white">
+                        {language === 'bn' ? w.nameBn : w.nameEn}
+                      </span>
+                      {net > 0 ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 font-bold">
+                          {language === 'bn' ? `বাকি ${toBn(net)}` : `Due ${net}`}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-bold">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 mb-2 font-mono flex items-center justify-between">
+                      <span>{language === 'bn' ? `মিস: ${toBn(missed)}` : `Missed: ${missed}`}</span>
+                      <span>{language === 'bn' ? `আদায়: ${toBn(repaid)}` : `Repaid: ${repaid}`}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 mt-auto">
+                      {repaid > 0 && (
+                        <button
+                          onClick={() => handleUndoRepayWaqt(w.id)}
+                          className="px-2 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 text-[10px] font-bold cursor-pointer border border-gray-200 dark:border-slate-700"
+                          title={language === 'bn' ? '১টি আদায় কমান' : 'Undo 1'}
+                        >
+                          -১
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleRepayWaqt(w.id)}
+                        className="flex-1 py-1.5 px-2 rounded-lg bg-[#21409A] hover:bg-[#10235A] active:scale-95 text-white font-bold text-[11px] flex items-center justify-center gap-1 transition-all cursor-pointer shadow-xs"
+                      >
+                        <Check className="w-3 h-3" />
+                        <span>{language === 'bn' ? '+১ আদায়' : '+1 Repaid'}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

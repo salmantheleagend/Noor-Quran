@@ -210,7 +210,11 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }`}
         >
           {language === 'bn' ? 'কুরআন' : 'Quran'}
-          {trimmed ? ` (${language === 'bn' ? toBn(results.quran.length) : results.quran.length})` : ''}
+          <span className="opacity-80 text-[10px] ml-1">
+            {trimmed
+              ? `(${language === 'bn' ? toBn(results.quran.length) : results.quran.length})`
+              : `(${language === 'bn' ? toBn(SURAH_LIST.length) : SURAH_LIST.length})`}
+          </span>
         </button>
 
         <button
@@ -225,7 +229,11 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }`}
         >
           {language === 'bn' ? 'হাদিস' : 'Hadith'}
-          {trimmed ? ` (${language === 'bn' ? toBn(results.hadiths.length) : results.hadiths.length})` : ''}
+          <span className="opacity-80 text-[10px] ml-1">
+            {trimmed
+              ? `(${language === 'bn' ? toBn(results.hadiths.length) : results.hadiths.length})`
+              : `(${language === 'bn' ? toBn(HADITHS_LIST.length) : HADITHS_LIST.length})`}
+          </span>
         </button>
 
         <button
@@ -240,7 +248,11 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }`}
         >
           {language === 'bn' ? 'দোআ ও জিকির' : 'Dua & Azkar'}
-          {trimmed ? ` (${language === 'bn' ? toBn(results.duas.length) : results.duas.length})` : ''}
+          <span className="opacity-80 text-[10px] ml-1">
+            {trimmed
+              ? `(${language === 'bn' ? toBn(results.duas.length) : results.duas.length})`
+              : `(${language === 'bn' ? toBn(DUAS_LIST.length) : DUAS_LIST.length})`}
+          </span>
         </button>
 
         <button
@@ -255,106 +267,300 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }`}
         >
           {language === 'bn' ? 'জরুরি মাসআলা' : 'Masala & Fiqh'}
-          {trimmed ? ` (${language === 'bn' ? toBn(results.masalas.length) : results.masalas.length})` : ''}
+          <span className="opacity-80 text-[10px] ml-1">
+            {trimmed
+              ? `(${language === 'bn' ? toBn(results.masalas.length) : results.masalas.length})`
+              : `(${language === 'bn' ? toBn(MASALAS_LIST.length) : MASALAS_LIST.length})`}
+          </span>
         </button>
       </div>
 
-      {/* If No Query, show Popular Suggestions */}
+      {/* Category Content when not searching */}
       {!trimmed && (
-        <div className="space-y-3 pt-1">
-          <span className="text-xs font-bold text-[#10235A] dark:text-slate-300 block">
-            {language === 'bn' ? 'জনপ্রিয় অনুসন্ধানসমূহ:' : 'Popular Searches:'}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {popularSearches.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  triggerHaptic(10);
-                  setSearchQuery(language === 'bn' ? p.query : p.queryEn);
-                }}
-                className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] text-xs font-medium text-[#10235A] dark:text-[#E9B7C3] hover:border-[#21409A] hover:bg-[#F8E8ED]/40 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
-              >
-                <span>{language === 'bn' ? p.labelBn : p.labelEn}</span>
-                <ArrowUpRight className="w-3 h-3 text-[#6B7280]" />
-              </button>
-            ))}
-          </div>
-
-          {/* Quick Category Gateway Cards */}
-          <div className="pt-3 grid grid-cols-2 gap-2.5">
-            <div
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('quran');
-              }}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
-                <BookOpen className="w-4 h-4" />
+        <div className="space-y-4 pt-1">
+          {/* ALL TOPICS VIEW */}
+          {selectedCategory === 'all' && (
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-[#10235A] dark:text-slate-300 block">
+                {language === 'bn' ? 'জনপ্রিয় অনুসন্ধানসমূহ:' : 'Popular Searches:'}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {popularSearches.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      triggerHaptic(10);
+                      setSearchQuery(language === 'bn' ? p.query : p.queryEn);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] text-xs font-medium text-[#10235A] dark:text-[#E9B7C3] hover:border-[#21409A] hover:bg-[#F8E8ED]/40 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <span>{language === 'bn' ? p.labelBn : p.labelEn}</span>
+                    <ArrowUpRight className="w-3 h-3 text-[#6B7280]" />
+                  </button>
+                ))}
               </div>
-              <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
-                {language === 'bn' ? 'কুরআনুল কারীম' : 'Holy Quran'}
-              </h4>
-              <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
-                {language === 'bn' ? '১১৪ সূরা ও ৩০ পারা' : '114 Surahs & 30 Juz'}
-              </p>
-            </div>
 
-            <div
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('hadith');
-              }}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
-                {language === 'bn' ? 'সহীহ হাদিস ভাণ্ডার' : 'Authentic Hadith'}
-              </h4>
-              <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
-                {language === 'bn' ? 'বুখারী ও মুসলিমের আলোকে' : 'Bukhari, Muslim & Sunan'}
-              </p>
-            </div>
+              {/* Quick Category Gateway Cards */}
+              <div className="pt-3 grid grid-cols-2 gap-2.5">
+                <div
+                  onClick={() => {
+                    triggerHaptic(15);
+                    setSelectedCategory('quran');
+                  }}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                    {language === 'bn' ? 'কুরআনুল কারীম' : 'Holy Quran'}
+                  </h4>
+                  <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
+                    {language === 'bn' ? '১১৪ সূরা ও ৩০ পারা' : '114 Surahs & 30 Juz'}
+                  </p>
+                </div>
 
-            <div
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('dua');
-              }}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
-                {language === 'bn' ? 'দৈনন্দিন মাসনূন দোআ' : 'Masnoon Duas'}
-              </h4>
-              <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
-                {language === 'bn' ? 'সকাল-সন্ধ্যা ও প্রাত্যহিক আমল' : 'Morning & Evening Azkar'}
-              </p>
-            </div>
+                <div
+                  onClick={() => {
+                    triggerHaptic(15);
+                    setSelectedCategory('hadith');
+                  }}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                    {language === 'bn' ? 'সহীহ হাদিস ভাণ্ডার' : 'Authentic Hadith'}
+                  </h4>
+                  <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
+                    {language === 'bn' ? 'বুখারী ও মুসলিমের আলোকে' : 'Bukhari, Muslim & Sunan'}
+                  </p>
+                </div>
 
-            <div
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('masala');
-              }}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
-            >
-              <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
-                <HelpCircle className="w-4 h-4" />
+                <div
+                  onClick={() => {
+                    triggerHaptic(15);
+                    setSelectedCategory('dua');
+                  }}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                    {language === 'bn' ? 'দৈনন্দিন মাসনূন দোআ' : 'Masnoon Duas'}
+                  </h4>
+                  <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
+                    {language === 'bn' ? 'সকাল-সন্ধ্যা ও প্রাত্যহিক আমল' : 'Morning & Evening Azkar'}
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => {
+                    triggerHaptic(15);
+                    setSelectedCategory('masala');
+                  }}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer group shadow-2xs"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-2">
+                    <HelpCircle className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                    {language === 'bn' ? 'প্রয়োজনীয় ফিকহি মাসআলা' : 'Fiqh Masala'}
+                  </h4>
+                  <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
+                    {language === 'bn' ? 'সালাত ও তাহরাত বিষয়ক বিধান' : 'Verified Islamic rulings'}
+                  </p>
+                </div>
               </div>
-              <h4 className="text-xs font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
-                {language === 'bn' ? 'প্রয়োজনীয় ফিকহি মাসআলা' : 'Fiqh Masala'}
-              </h4>
-              <p className="text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
-                {language === 'bn' ? 'সালাত ও তাহরাত বিষয়ক বিধান' : 'Verified Islamic rulings'}
-              </p>
             </div>
-          </div>
+          )}
+
+          {/* QURAN BROWSE VIEW */}
+          {selectedCategory === 'quran' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
+                  <BookOpen className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
+                  <span>{language === 'bn' ? 'পবিত্র কুরআনুল কারীম (১১৪টি সূরা)' : 'Holy Quran (114 Surahs)'}</span>
+                </h3>
+                <span className="text-[11px] text-[#6B7280] dark:text-slate-400">
+                  {language === 'bn' ? 'যে কোনো সূরা ক্লিক করে তিলাওয়াত করুন' : 'Tap any Surah to read'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 max-h-[65vh] overflow-y-auto pr-1">
+                {SURAH_LIST.map((s) => (
+                  <div
+                    key={`browse-surah-${s.number}`}
+                    onClick={() => {
+                      triggerHaptic(15);
+                      onNavigate('quran', s.number);
+                    }}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer flex items-center justify-between shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                        {language === 'bn' ? toBn(s.number) : s.number}
+                      </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs sm:text-sm font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                            {language === 'bn' ? `সূরা ${s.nameBangla}` : `Surah ${s.nameEnglish}`}
+                          </h4>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] font-semibold">
+                            {s.revelationType === 'Meccan'
+                              ? (language === 'bn' ? 'মাক্কী' : 'Meccan')
+                              : (language === 'bn' ? 'মাদানী' : 'Medinan')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6B7280] dark:text-slate-400 mt-0.5">
+                          {language === 'bn'
+                            ? `${toBn(s.numberOfAyahs)} আয়াত · পৃষ্ঠা ${toBn(s.pageStart)} · পারা ${toBn(s.juzStart)}`
+                            : `${s.numberOfAyahs} verses · Page ${s.pageStart} · Juz ${s.juzStart}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-arabic text-base font-bold text-[#21409A] dark:text-[#E9B7C3]" dir="rtl">
+                        {s.nameArabic}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-[#6B7280] group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* HADITH BROWSE VIEW */}
+          {selectedCategory === 'hadith' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
+                  <span>{language === 'bn' ? 'সহীহ হাদিস সম্ভার' : 'Authentic Hadith Collection'}</span>
+                </h3>
+                <span className="text-[11px] text-[#6B7280] dark:text-slate-400">
+                  {language === 'bn' ? `${toBn(HADITHS_LIST.length)}টি হাদিস` : `${HADITHS_LIST.length} hadiths`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5 max-h-[65vh] overflow-y-auto pr-1">
+                {HADITHS_LIST.map((h) => (
+                  <div
+                    key={`browse-hadith-${h.id}`}
+                    onClick={() => {
+                      triggerHaptic(15);
+                      onNavigate('hadith');
+                    }}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer space-y-2 shadow-2xs group"
+                  >
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-[#21409A] dark:text-[#E9B7C3]">
+                        {language === 'bn' ? h.sourceBn : (h.source || h.sourceBn)}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold text-[10px]">
+                        {language === 'bn' ? (h.gradeBn || 'সহিহ') : (h.grade || 'Sahih')}
+                      </span>
+                    </div>
+                    {h.arabic && (
+                      <p className="font-arabic text-sm text-[#10235A] dark:text-slate-100 text-right leading-loose" dir="rtl">
+                        {h.arabic}
+                      </p>
+                    )}
+                    <p className="text-xs text-[#1F2937] dark:text-slate-200 leading-relaxed">
+                      "{language === 'bn' ? h.translationBn : (h.translationEn || h.translationBn)}"
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* DUA BROWSE VIEW */}
+          {selectedCategory === 'dua' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
+                  <span>{language === 'bn' ? 'দৈনন্দিন মাসনূন দোআ ও জিকির' : 'Masnoon Duas & Daily Azkar'}</span>
+                </h3>
+                <span className="text-[11px] text-[#6B7280] dark:text-slate-400">
+                  {language === 'bn' ? `${toBn(DUAS_LIST.length)}টি দোআ` : `${DUAS_LIST.length} duas`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5 max-h-[65vh] overflow-y-auto pr-1">
+                {DUAS_LIST.map((d) => (
+                  <div
+                    key={`browse-dua-${d.id}`}
+                    onClick={() => {
+                      triggerHaptic(15);
+                      onNavigate('dua');
+                    }}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer space-y-1.5 shadow-2xs group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs sm:text-sm font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                        {language === 'bn' ? d.titleBn : (d.title || d.titleBn)}
+                      </h4>
+                      <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                        {language === 'bn' ? d.referenceBn : d.reference}
+                      </span>
+                    </div>
+
+                    <p className="font-uthmani text-sm text-[#21409A] dark:text-[#E9B7C3] font-bold text-right py-1 leading-relaxed" dir="rtl">
+                      {d.arabic}
+                    </p>
+
+                    <p className="text-xs text-[#4B5563] dark:text-slate-300">
+                      {language === 'bn' ? d.translationBn : (d.translationEn || d.translationBn)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MASALA BROWSE VIEW */}
+          {selectedCategory === 'masala' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
+                  <HelpCircle className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
+                  <span>{language === 'bn' ? 'প্রয়োজনীয় ফিকহি মাসআলা' : 'Fiqh Masala & Rulings'}</span>
+                </h3>
+                <span className="text-[11px] text-[#6B7280] dark:text-slate-400">
+                  {language === 'bn' ? `${toBn(MASALAS_LIST.length)}টি মাসআলা` : `${MASALAS_LIST.length} masalas`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5 max-h-[65vh] overflow-y-auto pr-1">
+                {MASALAS_LIST.map((m) => (
+                  <div
+                    key={`browse-masala-${m.id}`}
+                    onClick={() => {
+                      triggerHaptic(15);
+                      onNavigate('masala');
+                    }}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer space-y-1.5 shadow-2xs group"
+                  >
+                    <h4 className="text-xs sm:text-sm font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
+                      {m.questionBn}
+                    </h4>
+                    <p className="text-xs text-[#4B5563] dark:text-slate-300 leading-relaxed">
+                      {m.answerBn}
+                    </p>
+                    <span className="text-[10px] text-[#21409A] dark:text-[#E9B7C3] font-semibold block pt-0.5">
+                      {language === 'bn' ? `দলিল: ${m.references.join(', ')}` : `Reference: ${m.references.join(', ')}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
