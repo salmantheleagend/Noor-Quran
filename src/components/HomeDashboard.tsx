@@ -40,6 +40,9 @@ import {
   RotateCw,
   ExternalLink,
   X,
+  Calendar,
+  Bookmark,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   triggerHaptic,
@@ -50,6 +53,9 @@ import {
   speakAyahTranslation,
   stopSpeechAudio,
 } from '../utils/audioPlayer';
+import heroMosqueArt from '../assets/images/islamic_hero_mosque_1790957336258.jpg';
+import { getQuranLastRead, QuranLastRead } from '../utils/quranTracker';
+import { getAyyamBizStatus } from '../utils/ayyamBiz';
 
 interface HomeDashboardProps {
   language: AppLanguage;
@@ -77,6 +83,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [copiedHadith, setCopiedHadith] = useState(false);
   const [activeHomeView, setActiveHomeView] = useState<'standard' | 'ramadan'>('standard');
   const [showDuaType, setShowDuaType] = useState<'iftar' | 'niyyah'>('iftar');
+  const [lastReadQuran, setLastReadQuran] = useState<QuranLastRead | null>(() => getQuranLastRead());
+  const [showAyyamBizNiyyah, setShowAyyamBizNiyyah] = useState<boolean>(false);
+  const [ayyamBizDismissed, setAyyamBizDismissed] = useState<boolean>(false);
 
   // 1-second timer for live countdown
   useEffect(() => {
@@ -86,10 +95,24 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  // Listen for Quran reading progress updates across app
+  useEffect(() => {
+    const refreshLastRead = () => {
+      setLastReadQuran(getQuranLastRead());
+    };
+    window.addEventListener('storage', refreshLastRead);
+    window.addEventListener('focus', refreshLastRead);
+    return () => {
+      window.removeEventListener('storage', refreshLastRead);
+      window.removeEventListener('focus', refreshLastRead);
+    };
+  }, []);
+
   const waqtStatus: CurrentWaqtStatus = getCurrentWaqtStatus(now, prayerTimes);
   const runningNafl = getRunningNaflPrayer(prayerTimes, now, language);
   const bengaliDate = getBengaliDate(now);
   const hijriDate = getHijriDate(now);
+  const ayyamBiz = getAyyamBizStatus(now);
 
   // Helper to convert "HH:mm" on date to timestamp
   const parseTimeToMs = (date: Date, timeStr: string, dayOffset = 0): number => {
@@ -572,9 +595,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             {/* Ramadan Hero Card with Deep Sapphire & Rose Quartz */}
             <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-[#083B40] via-[#0b484e] to-[#062c30] text-white shadow-md border border-[#13545A] p-5">
               <img
-                src="/src/assets/images/islamic_hero_mosque_1790957336258.jpg"
-                alt="Mosque Silhouette"
-                referrerPolicy="no-referrer"
+                src={heroMosqueArt}
+                alt=""
+                role="presentation"
+                loading="eager"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
                 className="absolute inset-0 w-full h-full object-cover opacity-10 mix-blend-overlay pointer-events-none"
               />
 
@@ -813,7 +840,202 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 4. QUICK ACCESS GRID ("দ্রুত প্রবেশ") - Placed right below the Prayer Hero */}
+      {/* 3.5. AYYAM-E-BIZ (13, 14, 15 HIJRI) MONTHLY SUNNAH FASTING NOTICE */}
+      {ayyamBiz.isActive && !ayyamBizDismissed && (
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-[#0F5F62] via-[#0D4E50] to-[#072F31] text-white p-4 sm:p-4.5 shadow-md border border-[#1FB5A2]/30 space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-[#B9E2DD]/20 border border-[#B9E2DD]/30 flex items-center justify-center shrink-0 text-[#B9E2DD] shadow-2xs">
+                <Moon className="w-5 h-5 fill-current" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-bold text-white font-bengali">
+                    {language === 'bn' ? 'আইয়ামে বীজের সুন্নাত রোজা' : 'Ayyam-e-Biz Sunnah Fasting'}
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+                    ayyamBiz.isFastingToday
+                      ? 'bg-emerald-500/25 text-emerald-200 border-emerald-400/40 animate-pulse'
+                      : 'bg-amber-500/25 text-amber-200 border-amber-400/40'
+                  }`}>
+                    {ayyamBiz.isFastingToday
+                      ? (language === 'bn' ? `আজ ${toBn(ayyamBiz.currentFastDay || 1)}ম রোজা (${toBn(ayyamBiz.hijriDay)} ${ayyamBiz.hijriMonthBn})` : `Today Fast ${ayyamBiz.currentFastDay || 1} (${ayyamBiz.hijriDay} ${ayyamBiz.hijriMonthEn})`)
+                      : (language === 'bn' ? `আর ${toBn(ayyamBiz.daysUntilStart)} দিন বাকি • প্রস্তুতি নিন` : `${ayyamBiz.daysUntilStart} days left`)}
+                  </span>
+                </div>
+                <p className="text-xs text-[#B9E2DD]/90 mt-0.5">
+                  {language === 'bn'
+                    ? `প্রতি চন্দ্রমাসের ১৩, ১৪ ও ১৫ তারিখ (${ayyamBiz.hijriMonthBn} ${toBn(ayyamBiz.hijriYear)} হিজরি)`
+                    : `13th, 14th & 15th of ${ayyamBiz.hijriMonthEn} ${ayyamBiz.hijriYear} AH`}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                triggerHaptic(10);
+                setAyyamBizDismissed(true);
+              }}
+              className="text-[#B9E2DD]/70 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              title={language === 'bn' ? 'লুকান' : 'Dismiss'}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* 3 Days Schedule Dates Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
+            <div className={`p-2.5 rounded-2xl border backdrop-blur-xs transition-all ${
+              ayyamBiz.hijriDay === 13
+                ? 'bg-[#B9E2DD]/25 border-[#B9E2DD] text-white ring-2 ring-[#B9E2DD]/50'
+                : 'bg-black/25 border-white/10 text-white/90'
+            }`}>
+              <div className="flex items-center justify-between text-[11px] text-[#B9E2DD] font-semibold mb-1">
+                <span>{language === 'bn' ? '১ম রোজা (১৩ হিজরি)' : 'Day 1 (13 Hijri)'}</span>
+                {ayyamBiz.hijriDay === 13 && <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.2 rounded-full font-bold">{language === 'bn' ? 'আজ' : 'Today'}</span>}
+              </div>
+              <p className="font-bold text-white text-xs sm:text-sm">{ayyamBiz.dates.day13Bn}</p>
+            </div>
+
+            <div className={`p-2.5 rounded-2xl border backdrop-blur-xs transition-all ${
+              ayyamBiz.hijriDay === 14
+                ? 'bg-[#B9E2DD]/25 border-[#B9E2DD] text-white ring-2 ring-[#B9E2DD]/50'
+                : 'bg-black/25 border-white/10 text-white/90'
+            }`}>
+              <div className="flex items-center justify-between text-[11px] text-[#B9E2DD] font-semibold mb-1">
+                <span>{language === 'bn' ? '২য় রোজা (১৪ হিজরি)' : 'Day 2 (14 Hijri)'}</span>
+                {ayyamBiz.hijriDay === 14 && <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.2 rounded-full font-bold">{language === 'bn' ? 'আজ' : 'Today'}</span>}
+              </div>
+              <p className="font-bold text-white text-xs sm:text-sm">{ayyamBiz.dates.day14Bn}</p>
+            </div>
+
+            <div className={`p-2.5 rounded-2xl border backdrop-blur-xs transition-all ${
+              ayyamBiz.hijriDay === 15
+                ? 'bg-[#B9E2DD]/25 border-[#B9E2DD] text-white ring-2 ring-[#B9E2DD]/50'
+                : 'bg-black/25 border-white/10 text-white/90'
+            }`}>
+              <div className="flex items-center justify-between text-[11px] text-[#B9E2DD] font-semibold mb-1">
+                <span>{language === 'bn' ? '৩য় রোজা (১৫ হিজরি)' : 'Day 3 (15 Hijri)'}</span>
+                {ayyamBiz.hijriDay === 15 && <span className="text-[10px] bg-emerald-400 text-black px-1.5 py-0.2 rounded-full font-bold">{language === 'bn' ? 'আজ' : 'Today'}</span>}
+              </div>
+              <p className="font-bold text-white text-xs sm:text-sm">{ayyamBiz.dates.day15Bn}</p>
+            </div>
+          </div>
+
+          {/* Authentic Hadith Reference */}
+          <div className="p-2.5 rounded-2xl bg-black/30 border border-white/10 text-xs space-y-1">
+            <p className="text-white/95 leading-relaxed font-bengali">
+              "{ayyamBiz.hadithBn}"
+            </p>
+            <p className="text-[10px] text-[#B9E2DD] font-mono">
+              — {ayyamBiz.hadithSourceBn}
+            </p>
+          </div>
+
+          {/* Niyyah Accordion Toggle */}
+          <div className="pt-0.5">
+            <button
+              onClick={() => {
+                triggerHaptic(10);
+                setShowAyyamBizNiyyah((prev) => !prev);
+              }}
+              className="w-full py-1.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
+            >
+              <span>{language === 'bn' ? 'রোজার নিয়ত ও নিয়ম দেখুন' : 'View Fasting Intention'}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showAyyamBizNiyyah ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showAyyamBizNiyyah && (
+              <div className="mt-2 p-3 rounded-2xl bg-black/40 border border-white/15 space-y-2 text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[#B9E2DD]">{language === 'bn' ? 'আরবি নিয়ত' : 'Arabic Intention'}:</span>
+                  <p className="font-uthmani text-base text-right text-white font-bold leading-relaxed pt-1" dir="rtl">
+                    {ayyamBiz.niyyahAr}
+                  </p>
+                </div>
+                <div className="pt-1 border-t border-white/10">
+                  <span className="text-[10px] uppercase font-bold text-[#B9E2DD]">{language === 'bn' ? 'বাংলা উচ্চারণ ও অর্থ' : 'Meaning'}:</span>
+                  <p className="text-white/90 font-bengali leading-relaxed mt-0.5">
+                    {ayyamBiz.niyyahBn}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3.6. QURAN AUTO-RESUME READING TRACKER CARD */}
+      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] p-4 sm:p-4.5 shadow-2xs hover:shadow-xs transition-all">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#0F5F62]/10 dark:bg-[#0F5F62]/30 text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center shrink-0 border border-[#0F5F62]/20 shadow-2xs">
+              <BookOpen className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F5F62] dark:text-[#B9E2DD]">
+                  {language === 'bn' ? 'সর্বশেষ পঠিত কুরআন' : 'Last Read Quran'}
+                </span>
+                {lastReadQuran && (
+                  <span className="px-2 py-0.5 rounded-full bg-[#0F5F62]/10 dark:bg-[#0F5F62]/30 text-[#0F5F62] dark:text-[#B9E2DD] text-[10px] font-bold font-mono">
+                    {toBn(lastReadQuran.progressPercent)}% {language === 'bn' ? 'সম্পন্ন' : 'done'}
+                  </span>
+                )}
+              </div>
+              <h4 className="text-sm sm:text-base font-bold text-[#10235A] dark:text-white font-bengali truncate mt-0.5">
+                {lastReadQuran
+                  ? (language === 'bn'
+                      ? `সূরা ${lastReadQuran.surahNameBn} • আয়াত ${toBn(lastReadQuran.ayahNumber)}`
+                      : `Surah ${lastReadQuran.surahNameBn} • Ayah ${lastReadQuran.ayahNumber}`)
+                  : (language === 'bn' ? 'কুরআন তিলাওয়াত শুরু করুন' : 'Start Reading Quran')}
+              </h4>
+              <p className="text-xs text-muted-slate font-bengali truncate">
+                {lastReadQuran
+                  ? (language === 'bn'
+                      ? `পৃষ্ঠা ${toBn(lastReadQuran.pageNumber)} · মোট ${toBn(lastReadQuran.totalAyahs)} আয়াত`
+                      : `Page ${lastReadQuran.pageNumber} · ${lastReadQuran.totalAyahs} Ayahs`)
+                  : (language === 'bn' ? 'সূরা আল-ফাতিহা থেকে শুরু করুন' : 'Begin with Surah Al-Fatihah')}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              triggerHaptic(15);
+              if (lastReadQuran) {
+                onNavigate('quran', { surah: lastReadQuran.surahNumber, ayah: lastReadQuran.ayahNumber });
+              } else {
+                onNavigate('quran', { surah: 1, ayah: 1 });
+              }
+            }}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-[#0F5F62] hover:bg-[#123234] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xs cursor-pointer shrink-0"
+          >
+            <span>{lastReadQuran ? (language === 'bn' ? 'পড়া চালিয়ে যান' : 'Continue Reading') : (language === 'bn' ? 'কুরআন পড়ুন' : 'Read Quran')}</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Progress Bar */}
+        {lastReadQuran && (
+          <div className="mt-3 pt-2.5 border-t border-[#E7D9DE]/60 dark:border-[#1C2D5A]">
+            <div className="flex items-center justify-between text-[11px] text-muted-slate mb-1">
+              <span>{language === 'bn' ? 'পড়ার অগ্রগতি' : 'Reading Progress'}</span>
+              <span className="font-mono font-bold text-[#0F5F62] dark:text-[#B9E2DD]">
+                {toBn(lastReadQuran.ayahNumber)} / {toBn(lastReadQuran.totalAyahs)} {language === 'bn' ? 'আয়াত' : 'Ayahs'}
+              </span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-linear-to-r from-[#0F5F62] to-[#1FB5A2] transition-all duration-500"
+                style={{ width: `${Math.max(3, lastReadQuran.progressPercent)}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 4. QUICK ACCESS GRID ("দ্রুত প্রবেশ") - Placed right below */}
       <div className="bg-white dark:bg-[#142042] rounded-2xl p-3 sm:p-4 border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xs space-y-2.5">
         <div className="flex items-center justify-between px-0.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[#10235A] dark:text-[#E9B7C3]">

@@ -12,6 +12,7 @@ import {
 } from '../utils/quranPageManager';
 import { MushafPageView, MushafEdition } from './MushafPageView';
 import { SurahNavigationSheet } from './SurahNavigationSheet';
+import { getQuranLastRead, saveQuranLastRead, QuranLastRead } from '../utils/quranTracker';
 import {
   Search,
   BookOpen,
@@ -88,6 +89,7 @@ export interface QuranReaderProps {
   onToggleEnglish: () => void;
   onChangeReciter: (reciterId: string) => void;
   initialSurah?: number;
+  initialAyah?: number;
   initialSearchOpen?: boolean;
   onOpenProfile?: () => void;
 }
@@ -112,6 +114,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
   onToggleEnglish,
   onChangeReciter,
   initialSurah = 1,
+  initialAyah,
   initialSearchOpen = false,
   onOpenProfile,
 }) => {
@@ -119,6 +122,17 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
   const [activeSurah, setActiveSurah] = useState<number>(initialSurah || 1);
   const [ayahs, setAyahs] = useState<AyahItem[]>([]);
   const [loadingAyahs, setLoadingAyahs] = useState(false);
+
+  // Last read ayah tracker for current surah
+  const [lastReadAyah, setLastReadAyah] = useState<number>(() => {
+    if (initialAyah && initialAyah > 0) return initialAyah;
+    const saved = getQuranLastRead();
+    if (saved && saved.surahNumber === (initialSurah || 1)) {
+      return saved.ayahNumber;
+    }
+    return 1;
+  });
+  const hasAutoScrolledRef = useRef<boolean>(false);
 
   // Modals & Bottom Sheets
   const [showSurahModal, setShowSurahModal] = useState(initialSearchOpen);
@@ -262,15 +276,18 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
         setLoadingAyahs(false);
       });
 
-      try {
-        localStorage.setItem('noor_quran_last_read_surah', activeSurah.toString());
-      } catch {
-        // ignore
+      // Synchronize last read ayah for this surah
+      const saved = getQuranLastRead();
+      if (saved && saved.surahNumber === activeSurah) {
+        setLastReadAyah(saved.ayahNumber);
+      } else {
+        setLastReadAyah(1);
       }
+      hasAutoScrolledRef.current = false;
     }
   }, [activeSurah, readingMode]);
 
-  // Synchronize when external navigation passes an initialSurah (e.g. from GlobalSearch)
+  // Synchronize when external navigation passes an initialSurah or initialAyah
   useEffect(() => {
     if (initialSurah && initialSurah !== activeSurah) {
       setActiveSurah(initialSurah);
@@ -281,6 +298,41 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
     }
   }, [initialSurah]);
 
+  useEffect(() => {
+    if (initialAyah && initialAyah > 0) {
+      setLastReadAyah(initialAyah);
+      hasAutoScrolledRef.current = false;
+    }
+  }, [initialAyah]);
+
+  // Auto-scroll to target Ayah on load in Study mode
+  useEffect(() => {
+    if (!loadingAyahs && ayahs.length > 0 && readingMode === 'study') {
+      const target = initialAyah || lastReadAyah;
+      if (target && target > 1 && !hasAutoScrolledRef.current) {
+        hasAutoScrolledRef.current = true;
+        const timer = setTimeout(() => {
+          const el = document.getElementById(`study-ayah-${target}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 350);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loadingAyahs, ayahs, readingMode, initialAyah, lastReadAyah]);
+
+  // Record an Ayah as read when clicked or interacted with
+  const handleRecordAyahRead = (surahNum: number, ayahNum: number, pageNum?: number) => {
+    setLastReadAyah(ayahNum);
+    saveQuranLastRead({
+      surahNumber: surahNum,
+      ayahNumber: ayahNum,
+      pageNumber: pageNum,
+      readingMode: 'study',
+    });
+  };
+
   // Load Mushaf Page when currentMushafPage changes in Mushaf Mode
   useEffect(() => {
     if (readingMode === 'mushaf') {
@@ -288,17 +340,23 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
       fetchMushafPage(currentMushafPage).then((data) => {
         setMushafPageData(data);
         setLoadingPage(false);
+
+        // Auto-save last read page and first ayah
+        if (data && data.ayahs.length > 0) {
+          const firstAyah = data.ayahs[0];
+          saveQuranLastRead({
+            surahNumber: firstAyah.surahNumber || activeSurah,
+            ayahNumber: firstAyah.numberInSurah || 1,
+            pageNumber: currentMushafPage,
+            readingMode: 'mushaf',
+          });
+        }
+
         // Pre-fetch next page for seamless reading experience
         if (currentMushafPage < 604) {
           fetchMushafPage(currentMushafPage + 1).catch(() => {});
         }
       });
-
-      try {
-        localStorage.setItem('noor_quran_last_mushaf_page', currentMushafPage.toString());
-      } catch {
-        // ignore
-      }
     }
   }, [currentMushafPage, readingMode]);
 
@@ -920,6 +978,44 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
             </div>
           </div>
 
+          {/* Last Read Position and Progress Bar in Study Mode */}
+          {lastReadAyah > 1 && (
+            <div className="p-3.5 rounded-2xl bg-linear-to-r from-[#0F5F62]/10 via-[#0F5F62]/15 to-[#1FB5A2]/10 dark:from-[#0C454B]/50 dark:to-[#083B40]/40 border border-[#0F5F62]/20 dark:border-[#13545A] flex items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[#0F5F62] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Bookmark className="w-4 h-4 fill-current text-[#B9E2DD]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-[#0F5F62] dark:text-[#B9E2DD]">
+                      {language === 'bn' ? `সর্বশেষ পঠিত: আয়াত ${toBengaliNumber(lastReadAyah)}` : `Last Read: Ayah ${lastReadAyah}`}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#0F5F62]/15 dark:bg-[#0F5F62]/40 text-[#0F5F62] dark:text-[#B9E2DD] font-mono font-bold">
+                      {toBengaliNumber(Math.min(100, Math.round((lastReadAyah / currentSurahMeta.numberOfAyahs) * 100)))}% {language === 'bn' ? 'সম্পন্ন' : 'read'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-slate truncate mt-0.5">
+                    {language === 'bn' ? 'পূর্বের ছেড়ে যাওয়া আয়াত থেকে পড়া শুরু করুন' : 'Resume reading from where you left off'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  triggerHaptic(15);
+                  const el = document.getElementById(`study-ayah-${lastReadAyah}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#0F5F62] hover:bg-[#123234] text-white text-xs font-bold shrink-0 transition-all cursor-pointer shadow-2xs flex items-center gap-1 active:scale-95"
+              >
+                <span>{language === 'bn' ? 'সেখানে যান' : 'Go to Ayah'}</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Static Centered Bismillah Header for Each Surah (except Surah 9 At-Tawbah) */}
           {activeSurah !== 9 ? (
             <div
@@ -1018,23 +1114,33 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                   const isPlayingThis = playingAyahKey === ayahKey && isPlaying;
                   const isBookmarkedThis = !!bookmarkedAyahs[ayahKey];
                   const displayedAyahNumber = activeSurah === 1 ? ayah.numberInSurah - 1 : ayah.numberInSurah;
+                  const isLastReadThis = ayah.numberInSurah === lastReadAyah;
 
                   return (
                     <div
                       key={ayah.numberInSurah}
                       id={`study-ayah-${ayah.numberInSurah}`}
-                      className={`p-4 sm:p-5 rounded-3xl transition-all duration-300 space-y-3 shadow-2xs ${
+                      onClick={() => handleRecordAyahRead(activeSurah, ayah.numberInSurah, ayah.page)}
+                      className={`p-4 sm:p-5 rounded-3xl transition-all duration-300 space-y-3 shadow-2xs cursor-pointer ${
                         isPlayingThis
                           ? 'bg-linear-to-b from-[#F3FAF9] via-white to-[#F3FAF9] dark:from-[#0C454B] dark:via-[#083B40] dark:to-[#0C454B] border-2 border-[#0F5F62] ring-4 ring-[#B9E2DD]/40 shadow-lg scale-[1.01]'
+                          : isLastReadThis
+                          ? 'bg-white dark:bg-[#0C454B] border-2 border-[#0F5F62]/60 dark:border-[#B9E2DD]/60 ring-2 ring-[#B9E2DD]/30 shadow-xs'
                           : 'bg-white dark:bg-[#0C454B] border border-[#D7E9E7] dark:border-[#13545A]'
                       }`}
                     >
                       {/* Ayah Card Top: Number badge & Playing Status */}
                       <div className="flex items-center justify-between text-xs font-semibold text-muted-slate border-b border-[#D7E9E7]/60 dark:border-[#13545A] pb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="px-2.5 py-0.5 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] font-mono font-bold border border-[#D7E9E7] dark:border-[#13545A]">
                             {language === 'bn' ? `আয়াত ${toBengaliNumber(displayedAyahNumber)}` : `Ayah ${displayedAyahNumber}`}
                           </span>
+                          {isLastReadThis && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 shadow-2xs">
+                              <span>📍</span>
+                              <span>{language === 'bn' ? 'সর্বশেষ পঠিত' : 'Last Read'}</span>
+                            </span>
+                          )}
                         {isPlayingThis && (
                           <motion.span
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -1132,7 +1238,11 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                     {/* Controls: Listen, Bookmark, Share */}
                     <div className="pt-2 border-t border-[#E7D9DE]/60 dark:border-[#21409A]/30 flex items-center justify-center gap-6 text-xs font-semibold text-[#10235A] dark:text-[#E9B7C3]">
                       <button
-                        onClick={() => handleToggleAyahAudio(activeSurah, ayah.numberInSurah)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRecordAyahRead(activeSurah, ayah.numberInSurah, ayah.page);
+                          handleToggleAyahAudio(activeSurah, ayah.numberInSurah);
+                        }}
                         className="flex items-center gap-1.5 hover:underline cursor-pointer"
                         title={language === 'bn' ? 'তেলাওয়াত শুনুন' : 'Listen Recitation'}
                       >
@@ -1150,7 +1260,11 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                       </button>
 
                       <button
-                        onClick={() => handleToggleAyahBookmark(activeSurah, ayah.numberInSurah)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRecordAyahRead(activeSurah, ayah.numberInSurah, ayah.page);
+                          handleToggleAyahBookmark(activeSurah, ayah.numberInSurah);
+                        }}
                         className="flex items-center gap-1.5 hover:underline cursor-pointer"
                         title={language === 'bn' ? 'বুকমার্ক করুন' : 'Bookmark'}
                       >
@@ -1163,7 +1277,11 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                       </button>
 
                       <button
-                        onClick={() => handleShareAyah(ayah, language === 'bn' ? currentSurahMeta.nameBangla : currentSurahMeta.nameEnglish)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRecordAyahRead(activeSurah, ayah.numberInSurah, ayah.page);
+                          handleShareAyah(ayah, language === 'bn' ? currentSurahMeta.nameBangla : currentSurahMeta.nameEnglish);
+                        }}
                         className="flex items-center gap-1.5 hover:underline cursor-pointer"
                         title={language === 'bn' ? 'শেয়ার করুন' : 'Share'}
                       >

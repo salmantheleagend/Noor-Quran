@@ -4,6 +4,13 @@ import { formatPrayerTime12h } from '../utils/prayerTimes';
 import { triggerHaptic } from '../utils/audioPlayer';
 import { ChevronRight, Palette, Clock, Sparkles } from 'lucide-react';
 
+import nabawiArt from '../assets/images/masjid_nabawi_art_1792513330965.jpg';
+import kaabaArt from '../assets/images/kaaba_makkah_art_1790957360864.jpg';
+import aqsaArt from '../assets/images/masjid_aqsa_art_1792513345392.jpg';
+import sheikhZayedArt from '../assets/images/sheikh_zayed_art_1792513359645.jpg';
+import blueMosqueArt from '../assets/images/blue_mosque_art_1792513374990.jpg';
+import baitulMukarramArt from '../assets/images/baitul_mukarram_art_1792513393050.jpg';
+
 export type NaflCardStyleId =
   | 'madinah_tahajjud'
   | 'makkah_ishraq'
@@ -45,7 +52,7 @@ const NAFL_CARD_STYLES: NaflCardStyleOption[] = [
     accentColor: '#34D399',
     badgeBg: 'bg-emerald-500/25 text-emerald-100 border-emerald-400/40',
     quoteBg: 'bg-black/55 text-emerald-50 border-emerald-400/25',
-    bgImage: '/src/assets/images/masjid_nabawi_art_1792513330965.jpg',
+    bgImage: nabawiArt,
     calligraphy: 'وَمِنَ ٱلَّيْلِ فَتَهَجَّدْ بِهِۦ نَافِلَةً لَّكَ',
   },
   {
@@ -60,7 +67,7 @@ const NAFL_CARD_STYLES: NaflCardStyleOption[] = [
     accentColor: '#FBBF24',
     badgeBg: 'bg-amber-500/25 text-amber-100 border-amber-400/40',
     quoteBg: 'bg-black/55 text-amber-50 border-amber-400/25',
-    bgImage: '/src/assets/images/kaaba_makkah_art_1790957360864.jpg',
+    bgImage: kaabaArt,
     calligraphy: 'وَٱلضُّحَىٰ · وَٱلَّيْلِ إِذَا سَجَىٰ',
   },
   {
@@ -75,8 +82,8 @@ const NAFL_CARD_STYLES: NaflCardStyleOption[] = [
     accentColor: '#38BDF8',
     badgeBg: 'bg-sky-500/25 text-sky-100 border-sky-400/40',
     quoteBg: 'bg-black/55 text-sky-50 border-sky-400/25',
-    bgImage: '/src/assets/images/masjid_aqsa_art_1792513345392.jpg',
-    calligraphy: 'فَسَبِّحْ بِحَمْدِ رَبِّكَ وَكُن مِّنَ السَّاجِدِينَ',
+    bgImage: aqsaArt,
+    calligraphy: 'فَسَبِّحْ بِحَمْدِ رَبِّكَ وَكُن مِّনَ السَّاجِدِينَ',
   },
   {
     id: 'sheikh_zayed_pool',
@@ -90,7 +97,7 @@ const NAFL_CARD_STYLES: NaflCardStyleOption[] = [
     accentColor: '#A78BFA',
     badgeBg: 'bg-indigo-500/25 text-indigo-100 border-indigo-400/40',
     quoteBg: 'bg-black/55 text-indigo-50 border-indigo-400/25',
-    bgImage: '/src/assets/images/sheikh_zayed_art_1792513359645.jpg',
+    bgImage: sheikhZayedArt,
     calligraphy: 'أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ',
   },
   {
@@ -105,7 +112,7 @@ const NAFL_CARD_STYLES: NaflCardStyleOption[] = [
     accentColor: '#60A5FA',
     badgeBg: 'bg-blue-500/25 text-blue-100 border-blue-400/40',
     quoteBg: 'bg-black/55 text-blue-50 border-blue-400/25',
-    bgImage: '/src/assets/images/blue_mosque_art_1792513374990.jpg',
+    bgImage: blueMosqueArt,
     calligraphy: 'وَاسْجُدْ وَاقْتَرِبْ ۩',
   },
   {
@@ -120,7 +127,7 @@ const NAFL_CARD_STYLES: NaflCardStyleOption[] = [
     accentColor: '#2DD4BF',
     badgeBg: 'bg-teal-500/25 text-teal-100 border-teal-400/40',
     quoteBg: 'bg-black/55 text-teal-50 border-teal-400/25',
-    bgImage: '/src/assets/images/baitul_mukarram_art_1792513393050.jpg',
+    bgImage: baitulMukarramArt,
     calligraphy: 'إِنَّ قُرْآنَ الْفَجْرِ كَانَ مَشْهُودًا',
   },
   {
@@ -267,7 +274,12 @@ export const NaflHeroCard: React.FC<NaflHeroCardProps> = ({
         <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none opacity-30 mix-blend-luminosity">
           <img
             src={activeStyle.bgImage}
-            alt={activeStyle.nameEn}
+            alt=""
+            role="presentation"
+            loading="eager"
+            onError={(e) => {
+              (e.currentTarget as HTMLElement).style.display = 'none';
+            }}
             className="w-full h-full object-cover object-center filter saturate-125"
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-transparent" />
