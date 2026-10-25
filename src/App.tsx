@@ -42,6 +42,7 @@ import { LocationModal } from './components/LocationModal';
 import { SettingsModal } from './components/SettingsModal';
 import { OnboardingModal } from './components/OnboardingModal';
 import { GenderSelectionModal } from './components/GenderSelectionModal';
+import { FeatureTipsModal } from './components/FeatureTipsModal';
 import { SplashScreen } from './components/SplashScreen';
 import { applyThemeToDOM } from './utils/themeManager';
 
@@ -159,17 +160,51 @@ export default function App() {
   // Modals & Screen States
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  // Prompt new users for gender on startup if not yet specified
-  const [isGenderModalOpen, setIsGenderModalOpen] = useState<boolean>(() => !preferences.gender);
+
+  // New user Feature Tips Tour (Shows first on app install before Gender selection)
+  const [showFeatureTour, setShowFeatureTour] = useState<boolean>(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const tourDone = localStorage.getItem('noor_quran_feature_tour_completed');
+      return tourDone !== 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Prompt new users for gender ONLY AFTER feature tour is completed/skipped
+  const [isGenderModalOpen, setIsGenderModalOpen] = useState<boolean>(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const tourDone = localStorage.getItem('noor_quran_feature_tour_completed') === 'true';
+      return tourDone && !preferences.gender;
+    } catch {
+      return !preferences.gender;
+    }
+  });
+
   // Splash screen motion graphics completely disabled on startup as requested
   const [showSplash, setShowSplash] = useState(false);
 
-  // Prompt new users for gender selection right at the start
-  useEffect(() => {
+  const handleCompleteFeatureTour = () => {
+    try {
+      localStorage.setItem('noor_quran_feature_tour_completed', 'true');
+    } catch {
+      // ignore
+    }
+    setShowFeatureTour(false);
+    // If gender is not yet chosen, show gender selection modal now
     if (!preferences.gender) {
       setIsGenderModalOpen(true);
     }
-  }, [preferences.gender]);
+  };
+
+  // If feature tour is finished and gender is still not chosen, open gender selection
+  useEffect(() => {
+    if (!showFeatureTour && !preferences.gender) {
+      setIsGenderModalOpen(true);
+    }
+  }, [showFeatureTour, preferences.gender]);
 
   // Synchronize Preferences to localStorage
   useEffect(() => {
@@ -616,7 +651,7 @@ export default function App() {
         onTouchEnd={handleTouchEnd}
         className={`flex-1 w-full mx-auto ${
           currentTab === 'quran' ? 'max-w-4xl px-0 pt-0' : 'max-w-2xl px-2 sm:px-3 pt-1'
-        } pb-[calc(6.8rem+env(safe-area-inset-bottom,0px))]`}
+        } pb-[calc(7.4rem+env(safe-area-inset-bottom,0px))]`}
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -842,23 +877,28 @@ export default function App() {
           onResetAllData={handleResetAllData}
           onOpenGenderSelection={() => setIsGenderModalOpen(true)}
           onReplaySplash={() => setShowSplash(true)}
+          onReplayFeatureTour={() => {
+            setIsSettingsModalOpen(false);
+            setShowFeatureTour(true);
+          }}
         />
       )}
 
-      {/* Gender Selection Modal (Mandatory prompt for new users, or accessed via settings/menu) */}
-      {isGenderModalOpen && (
+      {/* 1. App Feature Tips Walkthrough Tour (Shows first on app install before Gender selection, skippable) */}
+      {showFeatureTour && (
+        <FeatureTipsModal
+          language={preferences.language}
+          onComplete={handleCompleteFeatureTour}
+        />
+      )}
+
+      {/* 2. Gender Selection Modal (Prompts only after Feature Tour is completed/skipped, or accessed via settings/menu) */}
+      {!showFeatureTour && isGenderModalOpen && (
         <GenderSelectionModal
           language={preferences.language}
           currentGender={preferences.gender}
           onSelectGender={handleSelectGender}
           onClose={preferences.gender ? () => setIsGenderModalOpen(false) : undefined}
-        />
-      )}
-
-      {/* First-time Onboarding Modal (shows after gender is chosen) */}
-      {!preferences.onboardingCompleted && !isGenderModalOpen && (
-        <OnboardingModal
-          onComplete={(updates) => handleUpdatePreferences(updates)}
         />
       )}
 

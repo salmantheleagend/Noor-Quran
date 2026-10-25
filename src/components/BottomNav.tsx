@@ -127,52 +127,34 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
   // Dynamic bottom padding calculation that automatically clears Android 3-button, gesture pills, and iOS bars
   const computedBottomPadding = (() => {
-    if (!screenMetrics.isMobile) return '0.5rem'; // Desktop / large screen
+    if (!screenMetrics.isMobile) return '0.75rem'; // Desktop / large screen
 
     // Manual overrides if user set in preferences
-    if (bottomNavSpacing === 'compact') return 'max(env(safe-area-inset-bottom, 0px), 12px)';
-    if (bottomNavSpacing === 'standard') return 'max(env(safe-area-inset-bottom, 0px), 20px)';
-    if (bottomNavSpacing === 'extra') return 'max(env(safe-area-inset-bottom, 0px), 34px)';
+    if (bottomNavSpacing === 'compact') return 'max(env(safe-area-inset-bottom, 0px), 18px)';
+    if (bottomNavSpacing === 'standard') return 'max(env(safe-area-inset-bottom, 0px), 28px)';
+    if (bottomNavSpacing === 'extra') return 'max(env(safe-area-inset-bottom, 0px), 42px)';
 
     // AUTO MODE: Smart screen size & device adaptation
-    // 1. Standalone / PWA mode on Android: Edge-to-edge transparent navigation bar overlay
-    if (screenMetrics.isStandalone) {
-      return 'max(env(safe-area-inset-bottom, 0px), 28px)';
+    // On Android (with 3-button or gesture bars) or PWA standalone mode:
+    if (screenMetrics.isStandalone || screenMetrics.isAndroid) {
+      return 'max(env(safe-area-inset-bottom, 0px), 30px)';
     }
 
-    // 2. Android device in browser (where env(safe-area-inset-bottom) is frequently 0px)
-    if (screenMetrics.isAndroid) {
-      if (screenMetrics.isSmallScreen) {
-        return 'max(env(safe-area-inset-bottom, 0px), 16px)';
-      }
-      if (screenMetrics.isTallPhone) {
-        return 'max(env(safe-area-inset-bottom, 0px), 24px)';
-      }
-      return 'max(env(safe-area-inset-bottom, 0px), 20px)';
-    }
-
-    // 3. iOS and other mobile devices
+    // iOS and other mobile devices
     if (screenMetrics.isSmallScreen) {
-      return 'max(env(safe-area-inset-bottom, 0px), 14px)';
-    }
-    if (screenMetrics.isTallPhone) {
       return 'max(env(safe-area-inset-bottom, 0px), 22px)';
     }
-    return 'max(env(safe-area-inset-bottom, 0px), 18px)';
+    return 'max(env(safe-area-inset-bottom, 0px), 26px)';
   })();
-
-  const containerHeightClass = screenMetrics.isSmallScreen
-    ? 'h-13' // 52px for small-screen phones
-    : 'h-14 sm:h-16'; // 56px on mobile, 64px on larger screens
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-[#0E1416]/95 backdrop-blur-xl border-t border-[#D7E9E7] dark:border-[#22353B] transition-all shadow-[0_-4px_25px_rgba(0,0,0,0.08)] select-none"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white/98 dark:bg-[#0E1416]/98 backdrop-blur-xl border-t border-[#D7E9E7] dark:border-[#22353B] transition-all shadow-[0_-4px_25px_rgba(0,0,0,0.08)] select-none pt-1"
       style={{
         paddingBottom: computedBottomPadding,
       }}
     >
-      <div className={`max-w-md mx-auto grid grid-cols-5 ${containerHeightClass} items-center px-1`}>
+      <div className="max-w-md mx-auto grid grid-cols-5 min-h-[58px] sm:min-h-[64px] items-center px-1">
         {navItems.map((item) => {
           const isActive =
             currentTab === item.id ||
@@ -190,28 +172,34 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className="flex flex-col items-center justify-center h-full min-h-[44px] py-0.5 cursor-pointer transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF] active:scale-95"
+              className="group flex flex-col items-center justify-center h-full min-h-[52px] py-1 cursor-pointer transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF] active:scale-95"
               aria-label={item.label}
             >
               <div
-                className={`flex flex-col items-center justify-center w-full max-w-[68px] sm:max-w-[76px] py-1 px-1 rounded-2xl transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center w-full max-w-[68px] sm:max-w-[76px] py-1 px-1 rounded-2xl transition-all duration-200 relative ${
                   isActive
-                    ? 'bg-[#F3FAF9] dark:bg-[#18282D] text-[#0F5F62] dark:text-[#2DD4BF] shadow-2xs -translate-y-0.5 border border-[#D7E9E7]/80 dark:border-[#22353B]'
-                    : 'text-[#5E7475] dark:text-[#9AB2B0] hover:text-[#0F5F62] dark:hover:text-[#EAF2F1]'
+                    ? 'bg-[#EAF5F4] dark:bg-[#16272B] text-[#083B40] dark:text-[#2DD4BF] shadow-2xs -translate-y-0.5 border border-[#B9E2DD]/80 dark:border-[#2DD4BF]/30'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-[#083B40] dark:hover:text-[#2DD4BF]'
                 }`}
               >
+                {/* Active Top Accent Pip */}
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#083B40] dark:bg-[#2DD4BF] absolute -top-1" />
+                )}
+
                 <div className="transition-transform duration-200 shrink-0">
                   {item.icon}
                 </div>
+
                 <span
-                  className={`tracking-tight truncate w-full text-center mt-0.5 transition-colors leading-tight ${
-                    screenMetrics.isVeryNarrow || screenMetrics.isSmallScreen
-                      ? 'text-[9.5px]'
-                      : 'text-[10.5px] sm:text-[11px]'
+                  className={`w-full text-center mt-1 pb-0.5 transition-colors leading-none tracking-normal font-sans ${
+                    screenMetrics.isVeryNarrow
+                      ? 'text-[10px]'
+                      : 'text-[11px] sm:text-[11.5px]'
                   } ${
                     isActive
-                      ? 'font-bold text-[#0F5F62] dark:text-[#B9E2DD]'
-                      : 'font-medium text-[#5E7475] dark:text-[#A2C0BE]'
+                      ? 'font-black text-[#083B40] dark:text-[#2DD4BF]'
+                      : 'font-semibold text-slate-600 dark:text-slate-300 group-hover:text-[#083B40] dark:group-hover:text-[#2DD4BF]'
                   }`}
                 >
                   {item.label}

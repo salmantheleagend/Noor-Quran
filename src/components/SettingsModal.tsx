@@ -51,6 +51,7 @@ interface SettingsModalProps {
   onResetAllData: () => void;
   onOpenGenderSelection?: () => void;
   onReplaySplash?: () => void;
+  onReplayFeatureTour?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -65,6 +66,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onResetAllData,
   onOpenGenderSelection,
   onReplaySplash,
+  onReplayFeatureTour,
 }) => {
   const t = TRANSLATIONS[language];
   const [customColorInput, setCustomColorInput] = useState<string>(
@@ -1091,6 +1093,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* 9. DATA BACKUP & WIPE */}
           <div className="pt-2 border-t border-[#E7D9DE] dark:border-[#1C2D5A] space-y-2">
+            {/* Replay Feature Tour / Tips */}
+            {onReplayFeatureTour && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(15);
+                  onReplayFeatureTour();
+                }}
+                className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#083B40]/10 dark:bg-[#2DD4BF]/15 hover:bg-[#083B40]/20 text-[#083B40] dark:text-[#2DD4BF] border border-[#083B40]/20 dark:border-[#2DD4BF]/30 font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Sparkles className="w-4 h-4 text-[#083B40] dark:text-[#2DD4BF]" />
+                <span>অ্যাপের সকল ফিচার টিপস দেখুন (Feature Tour)</span>
+              </button>
+            )}
+
             {/* Replay Splash / Logo Motion Graphics */}
             {onReplaySplash && (
               <button
