@@ -92,6 +92,7 @@ export interface QuranReaderProps {
   initialAyah?: number;
   initialSearchOpen?: boolean;
   onOpenProfile?: () => void;
+  onBack?: () => void;
 }
 
 export type QuranReadingMode = 'study' | 'mushaf';
@@ -117,6 +118,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
   initialAyah,
   initialSearchOpen = false,
   onOpenProfile,
+  onBack,
 }) => {
   const t = TRANSLATIONS[language];
   const [activeSurah, setActiveSurah] = useState<number>(initialSurah || 1);
@@ -278,14 +280,19 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
 
       // Synchronize last read ayah for this surah
       const saved = getQuranLastRead();
-      if (saved && saved.surahNumber === activeSurah) {
-        setLastReadAyah(saved.ayahNumber);
-      } else {
-        setLastReadAyah(1);
-      }
+      const ayahToSet = (saved && saved.surahNumber === activeSurah) ? saved.ayahNumber : (initialAyah || 1);
+      setLastReadAyah(ayahToSet);
       hasAutoScrolledRef.current = false;
+
+      // Immediately save so the Home dashboard knows the user is currently reading this Surah
+      saveQuranLastRead({
+        surahNumber: activeSurah,
+        ayahNumber: ayahToSet,
+        pageNumber: currentSurahMeta.pageStart,
+        readingMode: 'study',
+      });
     }
-  }, [activeSurah, readingMode]);
+  }, [activeSurah, readingMode, currentSurahMeta.pageStart]);
 
   // Synchronize when external navigation passes an initialSurah or initialAyah
   useEffect(() => {
@@ -328,10 +335,62 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
     saveQuranLastRead({
       surahNumber: surahNum,
       ayahNumber: ayahNum,
-      pageNumber: pageNum,
+      pageNumber: pageNum || currentSurahMeta.pageStart,
       readingMode: 'study',
     });
   };
+
+  // Real-time instant scroll tracking in Study Mode: records the Ayah currently in user's view
+  useEffect(() => {
+    if (readingMode !== 'study' || ayahs.length === 0 || typeof IntersectionObserver === 'undefined') return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries.filter((e) => e.isIntersecting);
+        if (visibleEntries.length > 0) {
+          // Pick the entry closest to the top of the reading viewport
+          const topEntry = visibleEntries[0];
+          const ayahNumStr = topEntry.target.getAttribute('data-ayah-number');
+          if (ayahNumStr) {
+            const num = parseInt(ayahNumStr, 10);
+            if (!isNaN(num) && num > 0) {
+              if (debounceTimer) clearTimeout(debounceTimer);
+              debounceTimer = setTimeout(() => {
+                setLastReadAyah(num);
+                saveQuranLastRead({
+                  surahNumber: activeSurah,
+                  ayahNumber: num,
+                  pageNumber: currentSurahMeta.pageStart,
+                  readingMode: 'study',
+                });
+              }, 400);
+            }
+          }
+        }
+      },
+      {
+        root: null,
+        rootMargin: '-10% 0px -50% 0px',
+        threshold: 0.15,
+      }
+    );
+
+    const cards = document.querySelectorAll('[data-ayah-number]');
+    cards.forEach((card) => observer.observe(card));
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      observer.disconnect();
+    };
+  }, [readingMode, ayahs, activeSurah, currentSurahMeta.pageStart]);
+
+  // Also auto-record the currently playing Ayah in real-time
+  useEffect(() => {
+    if (isPlaying && playingAyahDetails && playingAyahDetails.surahNumber === activeSurah) {
+      handleRecordAyahRead(playingAyahDetails.surahNumber, playingAyahDetails.ayahNumber);
+    }
+  }, [isPlaying, playingAyahDetails, activeSurah]);
 
   // Load Mushaf Page when currentMushafPage changes in Mushaf Mode
   useEffect(() => {
@@ -670,109 +729,121 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
       )}
 
       {/* =========================================================================
-          TOP UNIFIED NAVIGATION BAR
+          TOP UNIFIED NAVIGATION BAR (Clean, non-colliding, mobile-ergonomic)
           ========================================================================= */}
-      <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#0E1416]/95 backdrop-blur-md border-b border-[#E7D9DE] dark:border-[#22353B] transition-colors">
-        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-1.5 flex items-center justify-between gap-1 sm:gap-2">
-          {/* Left: Mode Toggle & Surah Selector */}
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-            {/* Reading Mode Segmented Pill */}
-            <div className="p-0.5 rounded-2xl bg-[#F8E8ED] dark:bg-[#18282D] border border-[#E7D9DE] dark:border-[#22353B] flex items-center text-[11px] sm:text-xs shrink-0">
+      <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-[#0E1416]/95 backdrop-blur-md border-b border-[#E7D9DE] dark:border-[#22353B] transition-colors shadow-2xs">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-2">
+          {/* Left Zone: Back Button + Surah Selector */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {onBack && (
               <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(15);
+                  onBack();
+                }}
+                className="w-9 h-9 shrink-0 rounded-xl bg-[#F8E8ED] dark:bg-[#18282D] text-[#083B40] dark:text-[#2DD4BF] hover:scale-105 active:scale-95 transition-all flex items-center justify-center border border-[#E7D9DE] dark:border-[#22353B] cursor-pointer shadow-2xs"
+                title={language === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}
+                aria-label="Back"
+              >
+                <ChevronLeft className="w-5 h-5 stroke-[2.3]" />
+              </button>
+            )}
+
+            {/* Surah Selector Dropdown (Clean, properly bounded, no text collision) */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(15);
+                setShowSurahModal(true);
+              }}
+              className="min-h-[38px] px-2.5 sm:px-3 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 text-xs sm:text-sm font-bold text-[#10235A] dark:text-white hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all flex items-center justify-between gap-1 shadow-2xs cursor-pointer min-w-0 max-w-[155px] xs:max-w-[200px] sm:max-w-[260px]"
+              title={language === 'bn' ? 'সূরা নির্বাচন বা খুঁজুন' : 'Select or Search Surah'}
+            >
+              <span className="truncate">
+                {currentSurahMeta.number}. {language === 'bn' ? currentSurahMeta.nameBangla : currentSurahMeta.nameEnglish}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3] shrink-0" />
+            </button>
+          </div>
+
+          {/* Right Zone: Mode Toggle & Action Buttons (Strictly shrink-0, perfectly aligned) */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Reading Mode Segmented Pill */}
+            <div className="p-0.5 rounded-xl bg-[#F8E8ED] dark:bg-[#18282D] border border-[#E7D9DE] dark:border-[#22353B] flex items-center text-[10px] sm:text-xs">
+              <button
+                type="button"
                 onClick={() => handleToggleMode('mushaf')}
-                className={`py-1 px-2.5 sm:px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`py-1 px-2 sm:px-2.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   readingMode === 'mushaf'
                     ? 'bg-[#083B40] dark:bg-[#2DD4BF] text-white dark:text-[#0E1416] shadow-xs'
                     : 'text-[#10235A] dark:text-[#EAF2F1] hover:text-[#083B40]'
                 }`}
-                title="মুসহাফ পেজ মোড (বইয়ের মতো পাতা)"
+                title="মুসহাফ পেজ মোড"
               >
-                <Book className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>মুসহাফ</span>
+                <Book className="w-3 h-3" />
+                <span className="hidden xs:inline">মুসহাফ</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => handleToggleMode('study')}
-                className={`py-1 px-2.5 sm:px-3 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                className={`py-1 px-2 sm:px-2.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
                   readingMode === 'study'
                     ? 'bg-[#21409A] text-white shadow-xs'
                     : 'text-[#10235A] dark:text-[#E9B7C3] hover:text-[#21409A]'
                 }`}
-                title="স্টাডি মোড (আয়াত কার্ড ও অর্থ)"
+                title="স্টাডি মোড"
               >
-                <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>স্টাডি</span>
+                <Layers className="w-3 h-3" />
+                <span className="hidden xs:inline">স্টাডি</span>
               </button>
             </div>
 
-            {/* Surah Selector Dropdown */}
+            {/* Quick Search Button */}
             <button
+              type="button"
               onClick={() => {
                 triggerHaptic(15);
                 setShowSurahModal(true);
               }}
-              className="py-1 px-2 sm:px-3 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 text-xs font-semibold text-[#10235A] dark:text-white hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all flex items-center gap-1 shadow-2xs cursor-pointer min-h-[34px] sm:min-h-[38px] max-w-[125px] sm:max-w-none"
+              className="w-9 h-9 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-center text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all shadow-2xs cursor-pointer"
+              title={language === 'bn' ? 'সূরা ও আয়াত অনুসন্ধান' : 'Search Surah & Ayah'}
+              aria-label="Search"
             >
-              <span className="font-bold truncate">
-                {currentSurahMeta.number}. {currentSurahMeta.nameBangla}
-              </span>
-              <ChevronDown className="w-3 h-3 text-[#21409A] dark:text-[#E9B7C3] shrink-0" />
-            </button>
-          </div>
-
-          {/* Right: Search, Bookmark, Reading Settings */}
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <button
-              onClick={() => {
-                triggerHaptic(15);
-                setShowSurahModal(true);
-              }}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-center text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all shadow-2xs cursor-pointer"
-              title="সূরা খুঁজুন"
-            >
-              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Search className="w-4 h-4" />
             </button>
 
+            {/* Bookmark Surah Button */}
             <button
+              type="button"
               onClick={() => {
                 triggerHaptic(15);
                 onToggleBookmark(activeSurah);
               }}
-              className={`w-9 h-9 rounded-2xl border flex items-center justify-center transition-all shadow-2xs cursor-pointer ${
+              className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all shadow-2xs cursor-pointer ${
                 isSurahBookmarked
                   ? 'bg-[#21409A] text-white border-[#21409A]'
                   : 'bg-white dark:bg-[#142042] border-[#E7D9DE] dark:border-[#21409A]/40 text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A]'
               }`}
-              title="বুকমার্ক"
+              title={language === 'bn' ? 'সূরা বুকমার্ক করুন' : 'Bookmark Surah'}
+              aria-label="Bookmark"
             >
               <Bookmark className={`w-4 h-4 ${isSurahBookmarked ? 'fill-current' : ''}`} />
             </button>
 
-            {onOpenProfile && (
-              <button
-                onClick={() => {
-                  triggerHaptic(15);
-                  onOpenProfile();
-                }}
-                className="w-9 h-9 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-center text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all shadow-2xs cursor-pointer"
-                title="প্রোফাইল ও সেটিংস"
-              >
-                <User className="w-4 h-4" />
-              </button>
-            )}
-
-
-
+            {/* Reading Settings Sheet Button */}
             <button
+              type="button"
               onClick={() => {
                 triggerHaptic(15);
                 setShowSettingsSheet(true);
               }}
-              className="py-1.5 px-3 rounded-2xl bg-[#F8E8ED] dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#21409A]/50 text-xs font-semibold text-[#10235A] dark:text-[#E9B7C3] hover:bg-[#E9B7C3]/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs min-h-[38px]"
-              title="পঠন সেটিংস"
+              className="w-9 h-9 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#21409A]/40 flex items-center justify-center text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] transition-all shadow-2xs cursor-pointer"
+              title={language === 'bn' ? 'পঠন ও ফন্ট সেটিংস' : 'Reading Settings'}
+              aria-label="Reading Settings"
             >
-              <Sliders className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
-              <span className="hidden xs:inline">সেটিংস</span>
+              <Sliders className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -1120,6 +1191,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                     <div
                       key={ayah.numberInSurah}
                       id={`study-ayah-${ayah.numberInSurah}`}
+                      data-ayah-number={ayah.numberInSurah}
                       onClick={() => handleRecordAyahRead(activeSurah, ayah.numberInSurah, ayah.page)}
                       className={`p-4 sm:p-5 rounded-3xl transition-all duration-300 space-y-3 shadow-2xs cursor-pointer ${
                         isPlayingThis

@@ -140,6 +140,22 @@ export default function App() {
     return lr ? lr.ayahNumber : undefined;
   });
 
+  // Keep activeSurah and targetAyah synced in real-time when user reads any Ayah
+  useEffect(() => {
+    const handleLastReadSync = (e: CustomEvent) => {
+      if (e.detail && e.detail.surahNumber) {
+        setActiveSurahToOpen(e.detail.surahNumber);
+        if (e.detail.ayahNumber) {
+          setTargetAyahToScroll(e.detail.ayahNumber);
+        }
+      }
+    };
+    window.addEventListener('quran_last_read_updated', handleLastReadSync as EventListener);
+    return () => {
+      window.removeEventListener('quran_last_read_updated', handleLastReadSync as EventListener);
+    };
+  }, []);
+
   // Modals & Screen States
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -579,24 +595,28 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] bg-[#F3FAF9] dark:bg-[#0E1416] text-[#123234] dark:text-[#EAF2F1] flex flex-col font-sans transition-colors duration-200">
-      {/* Top Header */}
-      <Header
-        language={preferences.language}
-        theme={preferences.theme}
-        location={preferences.location}
-        onOpenLocationModal={() => setIsLocationModalOpen(true)}
-        onToggleTheme={handleToggleTheme}
-        onChangeLanguage={(lang) => handleUpdatePreferences({ language: lang })}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-        currentTab={currentTab}
-        onBack={handleGoBack}
-      />
+      {/* Top Header - Hidden on Quran Reader so QuranReader has its dedicated clean immersive header without collision */}
+      {currentTab !== 'quran' && (
+        <Header
+          language={preferences.language}
+          theme={preferences.theme}
+          location={preferences.location}
+          onOpenLocationModal={() => setIsLocationModalOpen(true)}
+          onToggleTheme={handleToggleTheme}
+          onChangeLanguage={(lang) => handleUpdatePreferences({ language: lang })}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          currentTab={currentTab}
+          onBack={handleGoBack}
+        />
+      )}
 
       {/* Main Content Area with Touch Gestures for Tab Navigation */}
       <main
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="flex-1 w-full max-w-2xl mx-auto px-2 sm:px-3 pt-1 pb-[calc(6.8rem+env(safe-area-inset-bottom,0px))]"
+        className={`flex-1 w-full mx-auto ${
+          currentTab === 'quran' ? 'max-w-4xl px-0 pt-0' : 'max-w-2xl px-2 sm:px-3 pt-1'
+        } pb-[calc(6.8rem+env(safe-area-inset-bottom,0px))]`}
       >
         <AnimatePresence mode="wait">
           <motion.div
@@ -659,6 +679,7 @@ export default function App() {
                 initialSurah={activeSurahToOpen}
                 initialAyah={targetAyahToScroll}
                 onOpenProfile={() => setIsSettingsModalOpen(true)}
+                onBack={handleGoBack}
               />
             )}
 
@@ -686,6 +707,7 @@ export default function App() {
                 }
                 onChangeAsrMethod={(asr) => handleUpdatePreferences({ asrMethod: asr })}
                 onOpenLocationModal={() => setIsLocationModalOpen(true)}
+                onOpenSettings={() => setIsSettingsModalOpen(true)}
                 ramadanMode={preferences.ramadanMode}
                 onToggleRamadanMode={() =>
                   handleUpdatePreferences({ ramadanMode: !preferences.ramadanMode })

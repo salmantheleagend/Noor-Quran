@@ -1128,8 +1128,8 @@ export const NamazTracker: React.FC<NamazTrackerProps> = ({ language }) => {
             </div>
           )}
 
-          {/* 5 WAQTS SELECTION GRID - Always accessible or expanded */}
-          <div className={`${showWaqtRepaySelector ? 'block' : 'hidden sm:block'} pt-1`}>
+          {/* 5 WAQTS SELECTION GRID - Completely collapsible as requested */}
+          <div className={`${showWaqtRepaySelector ? 'block animate-in fade-in duration-200' : 'hidden'} pt-1`}>
             <div className="text-[11px] font-bold text-[#10235A] dark:text-slate-200 mb-2">
               {language === 'bn' ? 'যে ওয়াক্তের কাজা আদায় করেছেন নির্বাচন করুন:' : 'Select the waqt you just repaid:'}
             </div>

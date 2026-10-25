@@ -95,14 +95,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Listen for Quran reading progress updates across app
+  // Listen for Quran reading progress updates across app (instant real-time sync)
   useEffect(() => {
     const refreshLastRead = () => {
       setLastReadQuran(getQuranLastRead());
     };
+    window.addEventListener('quran_last_read_updated', refreshLastRead);
     window.addEventListener('storage', refreshLastRead);
     window.addEventListener('focus', refreshLastRead);
     return () => {
+      window.removeEventListener('quran_last_read_updated', refreshLastRead);
       window.removeEventListener('storage', refreshLastRead);
       window.removeEventListener('focus', refreshLastRead);
     };

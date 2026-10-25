@@ -58,6 +58,7 @@ interface PrayerScheduleProps {
   onChangeCalculationMethod: (method: string) => void;
   onChangeAsrMethod: (method: 'hanafi' | 'standard') => void;
   onOpenLocationModal: () => void;
+  onOpenSettings?: () => void;
   ramadanMode?: boolean;
   onToggleRamadanMode?: () => void;
 }
@@ -71,6 +72,7 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
   onChangeCalculationMethod,
   onChangeAsrMethod,
   onOpenLocationModal,
+  onOpenSettings,
   ramadanMode = false,
   onToggleRamadanMode,
 }) => {
@@ -384,17 +386,21 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
           <button
             onClick={() => {
               triggerHaptic(15);
-              setIsNotifConfigOpen((prev) => !prev);
+              if (onOpenSettings) {
+                onOpenSettings();
+              } else {
+                setIsNotifConfigOpen((prev) => !prev);
+              }
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer min-h-[38px] ${
               notifSettings.enabled && permStatus === 'granted'
                 ? 'bg-[#21409A] text-white border-[#21409A] shadow-xs'
                 : 'bg-[#F8E8ED] hover:bg-[#E9B7C3]/30 dark:bg-[#142042] dark:hover:bg-[#1C2D5A] text-[#10235A] dark:text-[#F8E8ED] border-[#E7D9DE] dark:border-[#24386E]'
             }`}
-            title={language === 'bn' ? 'নামাজের আযান নোটিফিকেশন সেটিংস' : 'Prayer Adhan Notification Settings'}
+            title={language === 'bn' ? 'নামাজের আযান ও ওয়াক্ত নোটিফিকেশন সেটিংস' : 'Prayer Adhan Notification Settings'}
           >
             <BellRing className="w-3.5 h-3.5" />
-            <span>{language === 'bn' ? 'রিমাইন্ডার' : 'Alerts'}</span>
+            <span>{language === 'bn' ? 'নোটিফিকেশন সেটিংস' : 'Alerts Settings'}</span>
           </button>
         </div>
       </div>
@@ -416,164 +422,30 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
         </div>
       )}
 
-      {/* Permission Request Prompt Banner (if not granted) */}
-      {permStatus !== 'granted' && (
-        <div className="p-3.5 rounded-2xl bg-linear-to-r from-[#21409A]/10 via-[#F8E8ED] to-white dark:from-[#10235A] dark:via-[#142042] dark:to-[#0C152E] border border-[#21409A]/20 dark:border-[#24386E] flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-start gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#21409A] dark:bg-[#E9B7C3] text-white dark:text-[#10235A] flex items-center justify-center shrink-0 mt-0.5">
-              <BellRing className="w-4 h-4" />
+      {/* Subtle compact reminder link to open Settings if notification permission is not yet enabled */}
+      {permStatus !== 'granted' && onOpenSettings && (
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic(15);
+            onOpenSettings();
+          }}
+          className="w-full py-2.5 px-3.5 rounded-2xl bg-linear-to-r from-[#21409A]/10 via-[#F8E8ED] to-white dark:from-[#10235A]/50 dark:via-[#142042] dark:to-[#0C152E] border border-[#21409A]/20 dark:border-[#24386E] flex items-center justify-between text-xs text-[#10235A] dark:text-white font-medium hover:bg-[#F8E8ED] dark:hover:bg-[#142042] transition-colors cursor-pointer shadow-2xs"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 rounded-lg bg-[#21409A] dark:bg-[#E9B7C3] text-white dark:text-[#10235A] flex items-center justify-center shrink-0">
+              <BellRing className="w-3.5 h-3.5" />
             </div>
-            <div>
-              <h4 className="font-bold text-xs sm:text-sm text-[#10235A] dark:text-white">
-                {language === 'bn' ? 'ফোনে নামাজের নোটিফিকেশন পান' : 'Get Prayer Notifications on Device'}
-              </h4>
-              <p className="text-[11px] text-[#6B7280] dark:text-slate-300 leading-snug">
-                {language === 'bn'
-                  ? 'ওয়াক্ত শুরু হওয়ার সাথে সাথে ফোনে আযান সতর্কতা ও নোটিফিকেশন পাঠাতে অনুমতি দিন।'
-                  : 'Receive timely adhan alerts and prayer arrival notifications on your device.'}
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={async () => {
-              triggerHaptic(20);
-              const res = await requestNotificationPermission();
-              setPermStatus(res.permission);
-              if (res.granted) {
-                const updated: PrayerNotificationSettings = { ...notifSettings, enabled: true };
-                setNotifSettings(updated);
-                savePrayerNotificationSettings(updated);
-                setNotifFeedback(
-                  language === 'bn' ? '✓ নোটিফিকেশন সফলভাবে সক্রিয় হয়েছে!' : '✓ Notifications enabled successfully!'
-                );
-                setTimeout(() => setNotifFeedback(null), 3000);
-              }
-            }}
-            className="px-3.5 py-2 rounded-xl bg-[#21409A] hover:bg-[#10235A] text-white font-bold text-xs shrink-0 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span>{language === 'bn' ? 'অনুমতি দিন' : 'Allow Alerts'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Expandable Quick Notification Settings Card */}
-      {isNotifConfigOpen && (
-        <div className="p-4 rounded-3xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#24386E] shadow-md space-y-3.5 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-[#E7D9DE] dark:border-[#24386E] pb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-[#21409A] dark:bg-[#E9B7C3] text-white dark:text-[#10235A] flex items-center justify-center">
-                <Sliders className="w-3.5 h-3.5" />
-              </div>
-              <h4 className="font-bold text-sm text-[#10235A] dark:text-white">
-                {language === 'bn' ? 'আযান ও ওয়াক্ত রিমাইন্ডার সেটিংস' : 'Adhan & Reminder Settings'}
-              </h4>
-            </div>
-
-            <button
-              onClick={() => setIsNotifConfigOpen(false)}
-              className="text-xs text-[#6B7280] hover:text-[#10235A] dark:hover:text-white cursor-pointer px-2 py-1 rounded-lg"
-            >
-              ✕ {language === 'bn' ? 'বন্ধ করুন' : 'Close'}
-            </button>
-          </div>
-
-          {/* Master Switch & Test button */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[#FCFAF8] dark:bg-[#10235A]/50 p-3 rounded-2xl border border-[#E7D9DE] dark:border-[#24386E]">
-            <div>
-              <span className="font-bold text-xs text-[#10235A] dark:text-white block">
-                {language === 'bn' ? 'ওয়াক্ত নোটিফিকেশন সক্রিয়' : 'Prayer Notifications'}
-              </span>
-              <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
-                {notifSettings.enabled
-                  ? (language === 'bn' ? 'বর্তমানে ফোনে নোটিফিকেশন পাঠানো হচ্ছে' : 'Active on device')
-                  : (language === 'bn' ? 'সব ওয়াক্তের নোটিফিকেশন সাময়িকভাবে বন্ধ' : 'Disabled')}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  triggerHaptic(20);
-                  const res = await sendTestPrayerNotification(language);
-                  setNotifFeedback(res.message);
-                  setTimeout(() => setNotifFeedback(null), 3500);
-                }}
-                className="px-2.5 py-1.5 rounded-xl bg-[#F8E8ED] hover:bg-[#E9B7C3]/30 dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors border border-[#E7D9DE] dark:border-[#24386E]"
-              >
-                <Send className="w-3 h-3" />
-                <span>{language === 'bn' ? 'টেস্ট অ্যালার্ট' : 'Test Alert'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={async () => {
-                  triggerHaptic(15);
-                  if (!notifSettings.enabled && permStatus !== 'granted') {
-                    const res = await requestNotificationPermission();
-                    setPermStatus(res.permission);
-                    if (!res.granted) return;
-                  }
-                  const updated: PrayerNotificationSettings = {
-                    ...notifSettings,
-                    enabled: !notifSettings.enabled,
-                  };
-                  setNotifSettings(updated);
-                  savePrayerNotificationSettings(updated);
-                }}
-                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer min-h-[24px] shrink-0 ${
-                  notifSettings.enabled ? 'bg-[#21409A]' : 'bg-[#E7D9DE] dark:bg-slate-700'
-                }`}
-                aria-label="Toggle notifications"
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 left-1 ${
-                    notifSettings.enabled ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Advance Time Offset Selector */}
-          <div className="space-y-1.5 p-3 rounded-2xl bg-[#FCFAF8] dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#24386E]">
-            <span className="font-bold text-xs text-[#10235A] dark:text-white block">
-              {language === 'bn' ? 'কখন সতর্কবার্তা পাঠাবে?' : 'Reminder Advance Timing'}
+            <span className="text-[11px] sm:text-xs truncate">
+              {language === 'bn'
+                ? 'ফোনে ওয়াক্ত ও আযান রিমাইন্ডার পেতে সেটিংসে গিয়ে নোটিফিকেশন অন করুন'
+                : 'Enable prayer notifications & adhan alerts in Settings'}
             </span>
-            <div className="grid grid-cols-4 gap-1.5 pt-1">
-              {[
-                { mins: 0, label: language === 'bn' ? 'ঠিক ওয়াক্তে' : 'At Waqt' },
-                { mins: 5, label: language === 'bn' ? '৫ মি. আগে' : '5m Before' },
-                { mins: 10, label: language === 'bn' ? '১০ মি. আগে' : '10m Before' },
-                { mins: 15, label: language === 'bn' ? '১৫ মি. আগে' : '15m Before' },
-              ].map((opt) => {
-                const isSel = notifSettings.reminderOffsetMinutes === opt.mins;
-                return (
-                  <button
-                    key={opt.mins}
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic(15);
-                      const updated = { ...notifSettings, reminderOffsetMinutes: opt.mins };
-                      setNotifSettings(updated);
-                      savePrayerNotificationSettings(updated);
-                    }}
-                    className={`py-1.5 px-1 rounded-xl text-center text-xs font-bold transition-all cursor-pointer ${
-                      isSel
-                        ? 'bg-[#21409A] text-white shadow-xs'
-                        : 'bg-white dark:bg-[#142042] text-[#10235A] dark:text-slate-300 border border-[#E7D9DE] dark:border-[#24386E]'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
           </div>
-        </div>
+          <span className="text-[11px] font-bold text-[#21409A] dark:text-[#E9B7C3] shrink-0 ml-2">
+            {language === 'bn' ? 'সেটিংস →' : 'Settings →'}
+          </span>
+        </button>
       )}
 
       {/* SPECIAL RAMADAN FASTING BANNER (When user turns Ramadan Mode ON) */}

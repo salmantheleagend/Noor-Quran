@@ -76,6 +76,9 @@ export function saveQuranLastRead(params: {
     localStorage.setItem(LAST_READ_STORAGE_KEY, JSON.stringify(record));
     localStorage.setItem('noor_quran_last_read_surah', meta.number.toString());
     localStorage.setItem('noor_quran_last_mushaf_page', page.toString());
+
+    // Dispatch global event so all components (HomeDashboard, QuranReader, App) update instantly
+    window.dispatchEvent(new CustomEvent('quran_last_read_updated', { detail: record }));
   } catch {
     // ignore
   }

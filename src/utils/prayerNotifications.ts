@@ -188,27 +188,54 @@ export async function showSystemNotification(
     ...options,
   };
 
-  // 1. Try Service Worker showNotification (Best for Android & iOS PWA background)
+  // 1. Try Service Worker showNotification with timeout protection (essential for mobile Chrome & Android PWA)
+  let swSucceeded = false;
   if ('serviceWorker' in navigator) {
     try {
-      const reg = await navigator.serviceWorker.ready;
-      if (reg && 'showNotification' in reg) {
-        await reg.showNotification(title, finalOptions);
+      const readyPromise = navigator.serviceWorker.ready;
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000));
+      const maybeReg = await Promise.race([readyPromise, timeoutPromise]);
+
+      if (maybeReg && 'showNotification' in maybeReg) {
+        await maybeReg.showNotification(title, finalOptions);
+        swSucceeded = true;
         return true;
       }
-    } catch {
-      // fallback to standard Notification
+
+      // Check current registration if ready is slow
+      const curReg = await navigator.serviceWorker.getRegistration();
+      if (curReg && 'showNotification' in curReg) {
+        await curReg.showNotification(title, finalOptions);
+        swSucceeded = true;
+        return true;
+      }
+
+      // Send message to controller as fallback
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'SHOW_NOTIFICATION',
+          title,
+          options: finalOptions,
+        });
+        swSucceeded = true;
+        return true;
+      }
+    } catch (swErr) {
+      console.warn('Service Worker notification attempt:', swErr);
     }
   }
 
   // 2. Standard Web Notification fallback
-  try {
-    new Notification(title, finalOptions);
-    return true;
-  } catch (err) {
-    console.warn('Standard Web Notification failed:', err);
-    return false;
+  if (!swSucceeded) {
+    try {
+      new Notification(title, finalOptions);
+      return true;
+    } catch (err) {
+      console.warn('Standard Web Notification failed:', err);
+      return false;
+    }
   }
+  return false;
 }
 
 /**
@@ -450,8 +477,8 @@ export function checkAndTriggerPrayerNotifications(
     const scheduledTimeMs = prayerDate.getTime() - settings.reminderOffsetMinutes * 60 * 1000;
     const diffMs = now.getTime() - scheduledTimeMs;
 
-    // Trigger window: between 0 and 90 seconds (1.5 minutes) after scheduled time
-    if (diffMs >= 0 && diffMs <= 90000) {
+    // Trigger window: between 0 and 600 seconds (10 minutes) after scheduled time (reliable for mobile wakeups)
+    if (diffMs >= 0 && diffMs <= 600000) {
       // Mark as notified today first to avoid racing triggers
       lastNotifiedMap[sentKey] = todayDateStr;
       try {
