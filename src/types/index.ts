@@ -4,6 +4,13 @@ export type ColorTheme = 'teal' | 'sapphire' | 'emerald' | 'minimal' | 'rose' | 
 export type UserGender = 'male' | 'female';
 export type ArabicFontFamily = 'amiri-quran' | 'noto-naskh' | 'scheherazade' | 'amiri' | 'lateef' | 'noto-nastaliq';
 
+export interface GroundingMapLink {
+  title: string;
+  uri: string;
+  address?: string;
+  snippet?: string;
+}
+
 export interface LocationInfo {
   name: string;
   nameBn: string;
@@ -12,6 +19,17 @@ export interface LocationInfo {
   lng: number;
   country: string;
   timezone?: string;
+  formattedAddress?: string;
+  isMapsVerified?: boolean;
+  manualOffsets?: {
+    fajr?: number;
+    dhuhr?: number;
+    asr?: number;
+    maghrib?: number;
+    isha?: number;
+  };
+  nearbyMosques?: GroundingMapLink[];
+  groundingLinks?: GroundingMapLink[];
 }
 
 export type PrayerName = 'fajr' | 'sunrise' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
@@ -210,4 +228,30 @@ export interface UserPreferences {
   highContrast?: boolean;
   largeFontMode?: boolean;
   bottomNavSpacing?: 'auto' | 'compact' | 'standard' | 'extra';
+  colorBlindTajweed?: boolean;
+  prayerOffsets?: {
+    fajr: number;
+    sunrise: number;
+    dhuhr: number;
+    asr: number;
+    maghrib: number;
+    isha: number;
+  };
+  jamaatTimes?: {
+    fajr?: string;
+    dhuhr?: string;
+    asr?: string;
+    maghrib?: string;
+    isha?: string;
+    jummah?: string;
+  };
+  homeWidgets?: {
+    id: 'continueQuran' | 'dailyRuqyah' | 'quickAccess' | 'salahStreak' | 'dailyAyah' | 'dailyHadith' | 'naflPrayers' | 'jumuahSpecial' | 'missedSalah';
+    enabled: boolean;
+  }[];
+  hifzSettings?: {
+    dailyTargetAyahs: number;
+    activeSurah: number;
+    completedAyahs: number[];
+  };
 }

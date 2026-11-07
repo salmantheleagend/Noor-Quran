@@ -29,6 +29,9 @@ import {
   TrendingUp,
   Send,
   Sliders,
+  MapPin,
+  ExternalLink,
+  Navigation,
 } from 'lucide-react';
 import { playAdhanTone, triggerHaptic } from '../utils/audioPlayer';
 import {
@@ -342,12 +345,33 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
       {/* Header & Location & Ramadan Mode Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-[#10235A] dark:text-white">
-            {t.prayer}
-          </h2>
-          <p className="text-xs text-[#6B7280] dark:text-slate-400">
-            {language === 'bn' ? location.nameBn : location.name}, {location.country}
-          </p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold tracking-tight text-[#10235A] dark:text-white">
+              {t.prayer}
+            </h2>
+            {location.isMapsVerified && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 text-[10px] font-bold">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>Google Maps</span>
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic(15);
+              onOpenLocationModal();
+            }}
+            className="flex items-center gap-1.5 text-xs text-[#21409A] dark:text-[#E9B7C3] font-semibold hover:underline mt-0.5 cursor-pointer text-left"
+          >
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              {language === 'bn' ? location.nameBn : location.name}, {location.country}
+            </span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal ml-1">
+              ({language === 'bn' ? 'এলাকা বা অফসেট পরিবর্তন' : 'Change Area / Offset'})
+            </span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -383,25 +407,6 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
             <span>{language === 'bn' ? 'আযান সুর' : 'Adhan Melody'}</span>
           </button>
 
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              if (onOpenSettings) {
-                onOpenSettings();
-              } else {
-                setIsNotifConfigOpen((prev) => !prev);
-              }
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors border cursor-pointer min-h-[38px] ${
-              notifSettings.enabled && permStatus === 'granted'
-                ? 'bg-[#21409A] text-white border-[#21409A] shadow-xs'
-                : 'bg-[#F8E8ED] hover:bg-[#E9B7C3]/30 dark:bg-[#142042] dark:hover:bg-[#1C2D5A] text-[#10235A] dark:text-[#F8E8ED] border-[#E7D9DE] dark:border-[#24386E]'
-            }`}
-            title={language === 'bn' ? 'নামাজের আযান ও ওয়াক্ত নোটিফিকেশন সেটিংস' : 'Prayer Adhan Notification Settings'}
-          >
-            <BellRing className="w-3.5 h-3.5" />
-            <span>{language === 'bn' ? 'নোটিফিকেশন সেটিংস' : 'Alerts Settings'}</span>
-          </button>
         </div>
       </div>
 
@@ -420,32 +425,6 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
             ✕
           </button>
         </div>
-      )}
-
-      {/* Subtle compact reminder link to open Settings if notification permission is not yet enabled */}
-      {permStatus !== 'granted' && onOpenSettings && (
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic(15);
-            onOpenSettings();
-          }}
-          className="w-full py-2.5 px-3.5 rounded-2xl bg-linear-to-r from-[#21409A]/10 via-[#F8E8ED] to-white dark:from-[#10235A]/50 dark:via-[#142042] dark:to-[#0C152E] border border-[#21409A]/20 dark:border-[#24386E] flex items-center justify-between text-xs text-[#10235A] dark:text-white font-medium hover:bg-[#F8E8ED] dark:hover:bg-[#142042] transition-colors cursor-pointer shadow-2xs"
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 rounded-lg bg-[#21409A] dark:bg-[#E9B7C3] text-white dark:text-[#10235A] flex items-center justify-center shrink-0">
-              <BellRing className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-[11px] sm:text-xs truncate">
-              {language === 'bn'
-                ? 'ফোনে ওয়াক্ত ও আযান রিমাইন্ডার পেতে সেটিংসে গিয়ে নোটিফিকেশন অন করুন'
-                : 'Enable prayer notifications & adhan alerts in Settings'}
-            </span>
-          </div>
-          <span className="text-[11px] font-bold text-[#21409A] dark:text-[#E9B7C3] shrink-0 ml-2">
-            {language === 'bn' ? 'সেটিংস →' : 'Settings →'}
-          </span>
-        </button>
       )}
 
       {/* SPECIAL RAMADAN FASTING BANNER (When user turns Ramadan Mode ON) */}
@@ -950,110 +929,98 @@ export const PrayerSchedule: React.FC<PrayerScheduleProps> = ({
                 return (
                   <div
                     key={nafl.id}
-                    className={`rounded-2xl border transition-all ${
+                    className={`rounded-2xl border transition-all shadow-2xs ${
                       isRunning
-                        ? 'bg-[#F8E8ED]/90 dark:bg-[#142042] border-[#21409A] shadow-xs'
-                        : 'bg-[#FCFAF8] dark:bg-[#10235A]/40 border-[#E7D9DE] dark:border-[#1C2D5A]'
+                        ? 'bg-linear-to-r from-emerald-500/10 via-[#F8E8ED]/80 to-white dark:from-emerald-950/30 dark:via-[#142042] dark:to-[#0C152E] border-emerald-500/50 dark:border-emerald-500/40'
+                        : 'bg-white dark:bg-[#142042] border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A]/30'
                     }`}
                   >
-                    {/* Header Row */}
+                    {/* Compact Header Row - Designed precisely like Ayyam Biz Fasting card */}
                     <div
                       onClick={() => {
                         triggerHaptic(10);
                         setExpandedNaflId(isExpanded ? null : nafl.id);
                       }}
-                      className="p-3.5 flex items-center justify-between cursor-pointer select-none"
+                      className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 cursor-pointer select-none"
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
-                            {language === 'bn' ? nafl.nameBn : (nafl.nameEn || nafl.nameBn)}
-                          </h4>
-                          <span
-                            className="font-arabic text-sm sm:text-base text-[#10235A] dark:text-[#E9B7C3] font-bold px-2 py-0.5 rounded-md bg-[#F8E8ED] dark:bg-[#10235A] border border-[#E7D9DE]/60 dark:border-[#24386E]/60 shadow-2xs select-text"
-                            dir="rtl"
-                          >
-                            {nafl.nameAr}
-                          </span>
-                          {isRunning && (
-                            <span className="text-[10px] bg-[#21409A] text-white font-bold px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                              <Check className="w-2.5 h-2.5" /> {language === 'bn' ? 'চলমান' : 'Active'}
-                            </span>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {/* Compact Icon */}
+                        <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 text-xs sm:text-sm font-bold shadow-2xs ${
+                          isRunning
+                            ? 'bg-emerald-600 text-white animate-pulse'
+                            : 'bg-[#F8E8ED] dark:bg-[#10235A] text-[#21409A] dark:text-[#E9B7C3] border border-[#E7D9DE] dark:border-[#24386E]'
+                        }`}>
+                          {nafl.id === 'tahajjud' ? '🌌' : nafl.id === 'ishraq' ? '🌅' : nafl.id === 'chasht' ? '☀️' : nafl.id === 'awwabin' ? '🌇' : '✨'}
+                        </span>
 
-                        {/* Start & End Times */}
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-[#6B7280] dark:text-slate-300">
-                          {nafl.isTimeBounded ? (
-                            <>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
-                                <span>
-                                  {language === 'bn' ? 'শুরু: ' : 'Start: '}
-                                  <strong className="font-mono text-[#21409A] dark:text-[#E9B7C3]">
-                                    {formatPrayerTime12h(nafl.startTime, language)}
-                                  </strong>
-                                </span>
-                              </span>
-                              <span>·</span>
-                              <span>
-                                {language === 'bn' ? 'শেষ: ' : 'End: '}
-                                <strong className="font-mono text-[#10235A] dark:text-slate-200">
-                                  {formatPrayerTime12h(nafl.endTime, language)}
-                                </strong>
-                              </span>
-                            </>
-                          ) : (
-                            <span className="flex items-center gap-1 text-[#6B7280] dark:text-slate-400">
-                              <Info className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
-                              <span>
-                                {language === 'bn'
-                                  ? `${nafl.startTime} (${nafl.endTime})`
-                                  : `${nafl.startTimeEn || nafl.startTime} (${nafl.endTimeEn || nafl.endTime})`}
-                              </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-xs sm:text-[13px] font-bold text-[#10235A] dark:text-white truncate">
+                              {language === 'bn' ? nafl.nameBn : (nafl.nameEn || nafl.nameBn)}
+                            </h4>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-arabic font-semibold" dir="rtl">
+                              ({nafl.nameAr})
                             </span>
-                          )}
-                          <span>·</span>
-                          <span className="text-[#21409A] dark:text-[#E9B7C3] font-medium">
-                            {language === 'bn' ? `রাকাত: ${nafl.rakatBn}` : `Rakats: ${nafl.rakatEn || nafl.rakatBn}`}
-                          </span>
+                            {isRunning && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 animate-pulse">
+                                {language === 'bn' ? 'চলমান' : 'Active'}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Inline Time Window and Rakats */}
+                          <div className="flex items-center gap-1.5 text-[10.5px] text-[#6B7280] dark:text-slate-400 truncate mt-0.5">
+                            {nafl.isTimeBounded ? (
+                              <span>
+                                {formatPrayerTime12h(nafl.startTime, language)} – {formatPrayerTime12h(nafl.endTime, language)}
+                              </span>
+                            ) : (
+                              <span>{language === 'bn' ? nafl.startTime : (nafl.startTimeEn || nafl.startTime)}</span>
+                            )}
+                            <span>·</span>
+                            <span className="text-[#21409A] dark:text-[#E9B7C3] font-semibold">
+                              {language === 'bn' ? nafl.rakatBn : (nafl.rakatEn || nafl.rakatBn)}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      {/* Right Action Button like Ayyam Biz */}
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
-                          className="w-7 h-7 rounded-lg bg-white dark:bg-[#142042] text-[#6B7280] flex items-center justify-center border border-[#E7D9DE] dark:border-[#24386E] transition-transform"
+                          className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1"
                         >
-                          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          <span>{isExpanded ? (language === 'bn' ? 'সংক্ষেপ' : 'Less') : (language === 'bn' ? 'ফজিলত' : 'Virtue')}</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                       </div>
                     </div>
 
                     {/* Expandable Details */}
                     {isExpanded && (
-                      <div className={`px-3.5 pb-4 pt-1 border-t border-[#E7D9DE] dark:border-[#1C2D5A] space-y-3 text-xs text-[#1F2937] dark:text-slate-300 ${language === 'bn' ? 'font-bengali' : 'font-sans'}`}>
-                        {/* Virtue */}
-                        <div className="p-3 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] space-y-1">
-                          <span className="font-bold text-[#21409A] dark:text-[#E9B7C3] flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5" />
-                            {language === 'bn' ? 'ফজিলত ও গুরুত্ব:' : 'Virtues & Significance:'}
+                      <div className={`px-3 pb-3 pt-1 border-t border-[#E7D9DE]/70 dark:border-[#1C2D5A] space-y-2 text-xs text-[#1F2937] dark:text-slate-300 ${language === 'bn' ? 'font-bengali' : 'font-sans'}`}>
+                        {/* Virtue Box */}
+                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#10235A]/50 border border-slate-200/80 dark:border-[#1C2D5A] space-y-1">
+                          <span className="font-bold text-[11px] text-[#21409A] dark:text-[#E9B7C3] flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            {language === 'bn' ? 'ফজিলত:' : 'Virtue:'}
                           </span>
-                          <p className="leading-relaxed text-[#1F2937] dark:text-slate-200">
+                          <p className="leading-relaxed text-[11px] text-[#1F2937] dark:text-slate-200">
                             {language === 'bn' ? nafl.virtueBn : (nafl.virtueEn || nafl.virtueBn)}
                           </p>
-                          <span className="text-[11px] text-[#6B7280] dark:text-slate-400 block pt-0.5">
+                          <span className="text-[10px] text-[#6B7280] dark:text-slate-400 block pt-0.5">
                             {language === 'bn' ? `দলিল: ${nafl.hadithReferenceBn}` : `Reference: ${nafl.hadithReferenceEn || nafl.hadithReferenceBn}`}
                           </span>
                         </div>
 
                         {/* How to pray */}
-                        <div className="p-3 rounded-xl bg-[#F8E8ED]/70 dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#24386E] space-y-1">
-                          <span className="font-bold text-[#10235A] dark:text-white flex items-center gap-1.5">
-                            <BookOpen className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
-                            {language === 'bn' ? 'নামাজ আদায়ের নিয়ম ও পদ্ধতি:' : 'How to Pray:'}
+                        <div className="p-2.5 rounded-xl bg-[#F8E8ED]/60 dark:bg-[#142042]/70 border border-[#E7D9DE] dark:border-[#24386E] space-y-1">
+                          <span className="font-bold text-[11px] text-[#10235A] dark:text-white flex items-center gap-1">
+                            <BookOpen className="w-3 h-3 text-[#21409A] dark:text-[#E9B7C3]" />
+                            {language === 'bn' ? 'নিয়ম ও পদ্ধতি:' : 'How to Pray:'}
                           </span>
-                          <p className="leading-relaxed text-[#1F2937] dark:text-slate-300">
+                          <p className="leading-relaxed text-[11px] text-[#1F2937] dark:text-slate-300">
                             {language === 'bn' ? nafl.howToPrayBn : (nafl.howToPrayEn || nafl.howToPrayBn)}
                           </p>
                         </div>

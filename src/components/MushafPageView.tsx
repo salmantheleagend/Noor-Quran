@@ -35,7 +35,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 
-export type MushafEdition = 'standard' | 'tajweed' | 'hafezi_15' | 'nurani_easy';
+export type MushafEdition = 'standard' | 'tajweed' | 'hafezi_15' | 'nurani_easy' | 'indo_pak' | 'arabic_only';
 
 interface MushafPageViewProps {
   pageData: MushafPageData | null;
@@ -355,6 +355,18 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
           lineHeight: isMobile ? '2.7' : '3.15',
           letterSpacing: '0.3px',
         };
+      case 'indo_pak':
+        return {
+          fontSize: `${Math.round(28 * mobileScale * (zoomScale / 100))}px`,
+          lineHeight: isMobile ? '2.7' : '3.0',
+          letterSpacing: '0.3px',
+        };
+      case 'arabic_only':
+        return {
+          fontSize: `${Math.round(27 * mobileScale * (zoomScale / 100))}px`,
+          lineHeight: isMobile ? '2.6' : '2.9',
+          letterSpacing: '0.25px',
+        };
       case 'tajweed':
       case 'standard':
       default:
@@ -414,6 +426,8 @@ export const MushafPageView: React.FC<MushafPageViewProps> = ({
                       ({mushafEdition === 'hafezi_15' && (language === 'bn' ? '১৫ লাইন হাফেজি' : '15-Line Hafezi')}
                       {mushafEdition === 'tajweed' && (language === 'bn' ? 'কালার তাজবীদ' : 'Tajweed Color')}
                       {mushafEdition === 'nurani_easy' && (language === 'bn' ? 'নূরানী সহজ পাঠ' : 'Nurani Script')}
+                      {mushafEdition === 'indo_pak' && (language === 'bn' ? 'ইন্দো-পাক মুসহাফ' : 'Indo-Pak Mushaf')}
+                      {mushafEdition === 'arabic_only' && (language === 'bn' ? 'শুধু আরবি মুসহাফ' : 'Arabic-Only Mushaf')}
                       {mushafEdition === 'standard' && (language === 'bn' ? 'মদিনা উসমানি' : 'Madani Uthmani')})
                     </span>
                   </div>

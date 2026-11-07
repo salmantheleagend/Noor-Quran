@@ -232,12 +232,12 @@ class RuqyahManagerService {
       };
     }
 
-    // Check Medical Alert Keywords
+    // Check Medical Alert Keywords (Chest pain, breathing, seizures, self-harm, fainting, severe panic)
     const medicalRegex =
-      /\b(emergency|hospital|bleeding|broken|fracture|seizure|epilepsy|heart\s*attack|stroke|paralysis|blood|doctor)\b|হাসপাতাল|রক্তক্ষরণ|হার্ট\s*অ্যাটাক|স্ট্রোক|মৃগী\s*রোগ/i;
+      /\b(emergency|hospital|bleeding|broken|fracture|seizure|epilepsy|heart\s*attack|stroke|paralysis|blood|doctor|chest\s*pain|buk\s*betha|breathing|shwashkosto|shortness\s*of\s*breath|faint|fainting|oggan|unconscious|self\s*harm|suicide|panic\s*attack|severe\s*panic|insomnia|distress)\b|হাসপাতাল|রক্তক্ষরণ|হার্ট\s*অ্যাটাক|স্ট্রোক|মৃগী\s*রোগ|বুকে\s*ব্যথা|শ্বাসকষ্ট|অজ্ঞান|আত্মহত্যা|তীব্র\s*প্যানিক|তীব্র\s*আতঙ্ক|গুরুতর\s*অসুস্থতা/i;
     const hasMedicalAlert = medicalRegex.test(query);
     const medicalAlertMessageBn = hasMedicalAlert
-      ? 'জরুরি জ্ঞাতব্য: শারীরিক জটিলতা বা মারাত্মক উপসর্গের ক্ষেত্রে অনতিবিলম্বে বিশেষজ্ঞ ডাক্তারের চিকিৎসা গ্রহণ করুন। চিকিৎসকের পাশাপাশি কুরআন-সুন্নাহর দোয়া পাঠ করা সর্বোত্তম।'
+      ? 'জরুরি স্বাস্থ্য সতর্কতা: বুকে তীব্র ব্যথা, শ্বাসকষ্ট, অজ্ঞান হওয়া, খিঁচুনি বা গুরুতর মানসিক সংকটের ক্ষেত্রে অনতিবিলম্বে নিকটস্থ হাসপাতাল বা বিশেষজ্ঞ চিকিৎসকের শরণাপন্ন হন। রুকইয়াহ কোনো চিকিৎসা বা মানসিক স্বাস্থ্য সেবার বিকল্প নয়। নিরাপত্তা ও মানসিক প্রশান্তির জন্য চিকিৎসার পাশাপাশি আপনি এই রুকইয়াহ পড়তে বা শুনতে পারেন।'
       : undefined;
 
     let bestRule: IntentRule | null = null;
@@ -268,8 +268,9 @@ class RuqyahManagerService {
     const categoryItems = this.getItemsByCategory(matchedCategory);
 
     const primaryRuqyah = categoryItems[0] || RUQYAH_ITEMS[0];
-    const recommendedPlaylist =
-      categoryItems.length > 1 ? categoryItems.slice(0, 4) : [primaryRuqyah];
+    // By specification: 1 main relevant Ruqyah plan + maximum two supportive duas
+    const supportiveDuas = categoryItems.filter((i) => i.id !== primaryRuqyah.id).slice(0, 2);
+    const recommendedPlaylist = [primaryRuqyah, ...supportiveDuas];
 
     return {
       matchedCategoryId: matchedCategory,

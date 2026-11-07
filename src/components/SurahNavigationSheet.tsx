@@ -113,7 +113,7 @@ export const SurahNavigationSheet: React.FC<SurahNavigationSheetProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-white dark:bg-[#0B1E22] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-[#D7E9E7] dark:border-[#13545A] max-h-[88vh] sm:max-h-[82vh] flex flex-col overflow-hidden text-[#123234] dark:text-[#EAF2F1] transition-all"
+        className="w-full max-w-xl bg-white dark:bg-[#0B1E22] rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-[#D7E9E7] dark:border-[#13545A] max-h-[88dvh] sm:max-h-[82dvh] flex flex-col overflow-hidden text-[#123234] dark:text-[#EAF2F1] transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag Handle (Mobile) */}
@@ -228,7 +228,7 @@ export const SurahNavigationSheet: React.FC<SurahNavigationSheetProps> = ({
         </div>
 
         {/* Scrollable Surah List */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 divide-y divide-[#D7E9E7]/40 dark:divide-[#13545A]/40 scroll-smooth">
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 divide-y divide-[#D7E9E7]/40 dark:divide-[#13545A]/40 scroll-smooth pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
           {filteredSurahs.length === 0 ? (
             <div className="py-16 text-center space-y-2">
               <Search className="w-8 h-8 mx-auto text-slate-400 stroke-1" />

@@ -11,7 +11,6 @@ import {
   getNaflPrayersList,
 } from '../utils/prayerTimes';
 import { HADITHS_LIST } from '../data/hadithData';
-import { DAILY_AYAHS_LIST } from '../data/dailyAyahData';
 import { PrayerHeroCard } from './PrayerHeroCard';
 import { NaflHeroCard } from './NaflHeroCard';
 import {
@@ -43,25 +42,27 @@ import {
   Calendar,
   Bookmark,
   CheckCircle2,
+  MapPin,
 } from 'lucide-react';
-import {
-  triggerHaptic,
-  speakArabic,
-  getAyahAudioUrl,
-  getDailyAyahPlaylist,
-  AyahAudioTrack,
-  speakAyahTranslation,
-  stopSpeechAudio,
-} from '../utils/audioPlayer';
+import { triggerHaptic, speakArabic } from '../utils/audioPlayer';
 import heroMosqueArt from '../assets/images/islamic_hero_mosque_1790957336258.jpg';
 import { getQuranLastRead, QuranLastRead } from '../utils/quranTracker';
 import { getAyyamBizStatus } from '../utils/ayyamBiz';
+import { DailyPrayerStreakCard } from './DailyPrayerStreakCard';
+import { PrayerWeeklyChartCard } from './PrayerWeeklyChartCard';
+import { DailyAyahWidget } from './DailyAyahWidget';
+import { DailyHadithWidget } from './DailyHadithWidget';
+import { DailyRuqyahCard } from './DailyRuqyahCard';
+import { CustomizeHomeModal } from './CustomizeHomeModal';
+import { UserPreferences } from '../types';
 
 interface HomeDashboardProps {
   language: AppLanguage;
   gender?: UserGender | null;
   location: LocationInfo;
   prayerTimes: PrayerTimesData;
+  preferences?: UserPreferences;
+  onUpdatePreferences?: (partial: Partial<UserPreferences>) => void;
   onNavigate: (tab: string, extra?: unknown) => void;
   onOpenLocationModal: () => void;
   ramadanMode: boolean;
@@ -73,6 +74,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   gender,
   location,
   prayerTimes,
+  preferences,
+  onUpdatePreferences,
   onNavigate,
   onOpenLocationModal,
   ramadanMode,
@@ -86,6 +89,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [lastReadQuran, setLastReadQuran] = useState<QuranLastRead | null>(() => getQuranLastRead());
   const [showAyyamBizNiyyah, setShowAyyamBizNiyyah] = useState<boolean>(false);
   const [ayyamBizDismissed, setAyyamBizDismissed] = useState<boolean>(false);
+  const [showCustomizeModal, setShowCustomizeModal] = useState<boolean>(false);
+  const [showExtraWidgets, setShowExtraWidgets] = useState<boolean>(false);
+
+  // Check if a widget is enabled (Focused calm default by specification)
+  const isWidgetEnabled = (widgetId: string): boolean => {
+    if (!preferences?.homeWidgets || preferences.homeWidgets.length === 0) {
+      return (
+        widgetId === 'continueQuran' ||
+        widgetId === 'dailyRuqyah' ||
+        widgetId === 'quickAccess'
+      );
+    }
+    const found = preferences.homeWidgets.find((w) => w.id === widgetId);
+    return found ? found.enabled : false;
+  };
 
   // 1-second timer for live countdown
   useEffect(() => {
@@ -179,14 +197,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     .toString()
     .padStart(2, '0')}:${countdownSeconds.toString().padStart(2, '0')}`;
 
-  // Bengali digits converter
+  // Digits converter based on language
   const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-  const toBn = (num: number | string) =>
-    num
+  const toBn = (num: number | string) => {
+    if (language !== 'bn') return num.toString();
+    return num
       .toString()
       .split('')
       .map((c) => bnDigits[parseInt(c, 10)] || c)
       .join('');
+  };
 
   // Circular gauge geometry
   const radius = 72;
@@ -199,40 +219,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
   );
   const todayHadith = HADITHS_LIST[dayOfYear % HADITHS_LIST.length];
-
-  // Daily Ayah (Verse of the Day) State
-  const [dailyAyahIndex, setDailyAyahIndex] = useState<number>(() => {
-    return Math.abs(dayOfYear) % DAILY_AYAHS_LIST.length;
-  });
-  const [copiedAyah, setCopiedAyah] = useState(false);
-  // Audio state: 'idle' | 'tilawat' (Arabic recitation) | 'ortho' (translation speech)
-  const [audioState, setAudioState] = useState<'idle' | 'tilawat' | 'ortho'>('idle');
-  const ayahAudioRef = useRef<HTMLAudioElement | null>(null);
-  const playlistIndexRef = useRef<number>(0);
-  const currentPlaylistRef = useRef<AyahAudioTrack[]>([]);
-
-  const todayAyah = DAILY_AYAHS_LIST[dailyAyahIndex] || DAILY_AYAHS_LIST[0];
-
-  // Stop all audio & speech playback
-  const stopAllAyahAudio = () => {
-    if (ayahAudioRef.current) {
-      try {
-        ayahAudioRef.current.pause();
-        ayahAudioRef.current.currentTime = 0;
-      } catch {
-        // ignore
-      }
-    }
-    stopSpeechAudio();
-    setAudioState('idle');
-  };
-
-  // Clean up audio on unmount
-  useEffect(() => {
-    return () => {
-      stopAllAyahAudio();
-    };
-  }, []);
 
   // Period countdown status for female users
   const [periodStatus, setPeriodStatus] = useState<PeriodNotificationStatus | null>(null);
@@ -247,119 +233,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       setPeriodStatus(null);
     }
   }, [gender, language]);
-
-  const handleRandomizeAyah = () => {
-    triggerHaptic(20);
-    stopAllAyahAudio();
-    let nextIndex: number;
-    do {
-      nextIndex = Math.floor(Math.random() * DAILY_AYAHS_LIST.length);
-    } while (nextIndex === dailyAyahIndex && DAILY_AYAHS_LIST.length > 1);
-    setDailyAyahIndex(nextIndex);
-  };
-
-  // Play Tilawat of that specific ayah, and immediately upon conclusion speak the ortho (translation)
-  const handlePlayAyahAudio = () => {
-    triggerHaptic(15);
-    if (audioState !== 'idle') {
-      stopAllAyahAudio();
-      return;
-    }
-
-    // Prime speech synthesis during active user touch event (permits fallback speaking later)
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        const primer = new SpeechSynthesisUtterance('');
-        primer.volume = 0;
-        window.speechSynthesis.speak(primer);
-      } catch {
-        // ignore
-      }
-    }
-
-    const playlist = getDailyAyahPlaylist(todayAyah, language === 'en' ? 'en' : 'bn');
-    currentPlaylistRef.current = playlist;
-    playlistIndexRef.current = 0;
-
-    if (playlist.length === 0) return;
-
-    // Use or create a single audio instance so mobile browsers allow sequential playback
-    if (!ayahAudioRef.current) {
-      ayahAudioRef.current = new Audio();
-      try {
-        (ayahAudioRef.current as HTMLAudioElement & { referrerPolicy?: string }).referrerPolicy = 'no-referrer';
-      } catch {
-        // ignore
-      }
-    }
-    const audio = ayahAudioRef.current;
-
-    // Play the single specific ayah recitation, then immediately speak Bengali translation in a male voice
-    const playTrackAtIndex = (index: number) => {
-      if (index >= playlist.length) {
-        setAudioState('idle');
-        return;
-      }
-
-      playlistIndexRef.current = index;
-      const track = playlist[index];
-      setAudioState('tilawat');
-
-      audio.src = track.url;
-      audio.onended = () => {
-        // Tilawat concludes: immediately speak translation (ortho) in male voice
-        setAudioState('ortho');
-        speakAyahTranslation(
-          todayAyah.translationBn,
-          language === 'en' ? 'en' : 'bn',
-          () => setAudioState('idle'),
-          () => setAudioState('idle')
-        );
-      };
-
-      audio.onerror = () => {
-        // Fallback: speak Arabic recitation then speak translation in male voice
-        speakArabic(todayAyah.textArabic);
-        setTimeout(() => {
-          setAudioState('ortho');
-          speakAyahTranslation(
-            todayAyah.translationBn,
-            language === 'en' ? 'en' : 'bn',
-            () => setAudioState('idle'),
-            () => setAudioState('idle')
-          );
-        }, 3500);
-      };
-
-      audio.play().catch((err) => {
-        console.warn('Playback error:', err);
-        setAudioState('ortho');
-        speakAyahTranslation(
-          todayAyah.translationBn,
-          language === 'en' ? 'en' : 'bn',
-          () => setAudioState('idle'),
-          () => setAudioState('idle')
-        );
-      });
-    };
-
-    playTrackAtIndex(0);
-  };
-
-  const handleCopyAyah = () => {
-    const surahLabel = language === 'bn'
-      ? `আজকের আয়াত (সূরা ${todayAyah.surahNameBn} - আয়াত ${toBn(todayAyah.ayahNumber)})`
-      : `Daily Ayah (Surah ${todayAyah.surahNameEn || todayAyah.surahNumber} - Ayah ${todayAyah.ayahNumber})`;
-    const meaningLabel = language === 'bn' ? `অর্থ: "${todayAyah.translationBn}"` : `Translation: "${todayAyah.translationEn || todayAyah.translationBn}"`;
-    const appBrand = language === 'bn' ? '(নূর কুরআন - ইসলামিক কম্প্যানিয়ন)' : '(Noor Quran - Islamic Companion)';
-    const shareText = `${surahLabel}:\n\n${todayAyah.textArabic}\n\n${meaningLabel}\n\n${appBrand}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareText);
-      setCopiedAyah(true);
-      triggerHaptic(20);
-      setTimeout(() => setCopiedAyah(false), 2000);
-    }
-  };
 
   // Day of week & Friday / Thursday Maghrib detection
   const dayOfWeek = now.getDay(); // 0 = Sun, 4 = Thu, 5 = Fri
@@ -395,6 +268,22 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     if (name === 'prohibited_sunset') return language === 'bn' ? 'সূর্যাস্ত (নিষিদ্ধ)' : 'Sunset (Makruh)';
     return name;
   };
+
+  // 5 Daily Prayer Waqts for Home Prayer Cards with Active Waqt highlight
+  const dailyPrayerWaqts = [
+    { id: 'fajr', label: t.fajr, time: prayerTimes.fajr, icon: '🌅' },
+    {
+      id: 'dhuhr',
+      label: isFriday
+        ? (language === 'bn' ? "জুমু'আ" : language === 'ar' ? 'الجمعة' : "Jumu'ah")
+        : t.dhuhr,
+      time: prayerTimes.dhuhr,
+      icon: isFriday ? '🕌' : '☀️',
+    },
+    { id: 'asr', label: t.asr, time: prayerTimes.asr, icon: '🌤️' },
+    { id: 'maghrib', label: t.maghrib, time: prayerTimes.maghrib, icon: '🌇' },
+    { id: 'isha', label: t.isha, time: prayerTimes.isha, icon: '🌙' },
+  ];
 
   // Jumuah special serial guide expanded state
   const [isJumuahCardExpanded, setIsJumuahCardExpanded] = useState(true);
@@ -522,7 +411,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   );
 
   return (
-    <div className="pb-32 pt-1 sm:pt-2 px-3 sm:px-4 w-full max-w-lg mx-auto space-y-3.5 sm:space-y-4 overflow-x-hidden">
+    <div className="pb-32 pt-1 sm:pt-2 px-3 sm:px-4 w-full max-w-lg mx-auto space-y-3.5 sm:space-y-4">
       {/* 1. Date & Location Card (Compact Gregorian, Bangla & Hijri) */}
       <div className="bg-white dark:bg-[#142042] rounded-2xl p-3 border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xs space-y-1">
         <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-slate-400">
@@ -735,6 +624,66 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               </div>
             </div>
 
+            {/* 5 DAILY PRAYER TIME CARDS - SUBTLE PULSING GLOW FOR ACTIVE WAQT */}
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              {dailyPrayerWaqts.map((item) => {
+                const isActive = waqtStatus.currentWaqt === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onNavigate('prayer')}
+                    className={`relative p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-between text-center transition-all duration-300 cursor-pointer min-h-[72px] sm:min-h-[78px] border ${
+                      isActive
+                        ? 'prayer-active-glow ring-2 ring-[#0F5F62] dark:ring-[#B9E2DD] bg-[#F3FAF9] dark:bg-[#083B40] border-[#0F5F62] dark:border-[#B9E2DD] text-[#0F5F62] dark:text-[#B9E2DD] shadow-md z-10'
+                        : 'bg-white dark:bg-[#083B40]/40 border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 text-[#123234] dark:text-slate-200 hover:border-[#0F5F62]/40 hover:bg-[#F3FAF9]/50 dark:hover:bg-[#083B40]/60 shadow-2xs'
+                    }`}
+                    title={
+                      language === 'bn'
+                        ? `${item.label} সালাতের সময়সূচি দেখুন${isActive ? ' (চলমান ওয়াক্ত)' : ''}`
+                        : `View ${item.label} prayer time${isActive ? ' (Active Waqt)' : ''}`
+                    }
+                    aria-label={`${item.label}: ${formatPrayerTime12h(item.time, language)}${isActive ? ' Active' : ''}`}
+                  >
+                    {/* Active Waqt Pill Tag */}
+                    {isActive && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full bg-[#0F5F62] text-white dark:bg-[#B9E2DD] dark:text-[#083B40] text-[8px] font-black uppercase tracking-wider shadow-xs flex items-center gap-1 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#083B40] animate-ping" />
+                        <span>{language === 'bn' ? 'চলমান' : 'Active'}</span>
+                      </span>
+                    )}
+
+                    {/* Waqt Icon */}
+                    <span className="text-sm sm:text-base select-none leading-none pt-0.5">
+                      {item.icon}
+                    </span>
+
+                    {/* Waqt Name */}
+                    <span
+                      className={`text-[10px] xs:text-[10.5px] sm:text-xs font-bold truncate max-w-full leading-tight mt-0.5 ${
+                        isActive
+                          ? 'text-[#0F5F62] dark:text-[#B9E2DD] font-black'
+                          : 'text-[#123234] dark:text-slate-200'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+
+                    {/* Waqt Time */}
+                    <span
+                      className={`text-[9.5px] xs:text-[10.5px] sm:text-[11.5px] font-bold font-mono tabular-nums leading-none pb-0.5 ${
+                        isActive
+                          ? 'text-[#0F5F62] dark:text-[#B9E2DD] font-black'
+                          : 'text-[#123234]/80 dark:text-slate-300'
+                      }`}
+                    >
+                      {formatPrayerTime12h(item.time, language)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Ramadan Duas Card */}
             <div className="p-4 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xs space-y-3">
               <div className="flex items-center justify-between border-b border-[#E7D9DE]/60 dark:border-[#1C2D5A] pb-2">
@@ -838,13 +787,311 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               getWaqtName={getWaqtName}
               formatPrayerTime12h={formatPrayerTime12h}
             />
+
+            {/* 5 DAILY PRAYER TIME CARDS - SUBTLE PULSING GLOW GUIDES ATTENTION TO CURRENT ACTIVE WAQT */}
+            <div className="grid grid-cols-5 gap-1.5 sm:gap-2 pt-0.5">
+              {dailyPrayerWaqts.map((item) => {
+                const isActive = waqtStatus.currentWaqt === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onNavigate('prayer')}
+                    className={`relative p-2 sm:p-2.5 rounded-2xl flex flex-col items-center justify-between text-center transition-all duration-300 cursor-pointer min-h-[72px] sm:min-h-[78px] border ${
+                      isActive
+                        ? 'prayer-active-glow ring-2 ring-[#0F5F62] dark:ring-[#B9E2DD] bg-[#F3FAF9] dark:bg-[#083B40] border-[#0F5F62] dark:border-[#B9E2DD] text-[#0F5F62] dark:text-[#B9E2DD] shadow-md z-10'
+                        : 'bg-white dark:bg-[#083B40]/40 border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 text-[#123234] dark:text-slate-200 hover:border-[#0F5F62]/40 hover:bg-[#F3FAF9]/50 dark:hover:bg-[#083B40]/60 shadow-2xs'
+                    }`}
+                    title={
+                      language === 'bn'
+                        ? `${item.label} সালাতের সময়সূচি দেখুন${isActive ? ' (চলমান ওয়াক্ত)' : ''}`
+                        : `View ${item.label} prayer time${isActive ? ' (Active Waqt)' : ''}`
+                    }
+                    aria-label={`${item.label}: ${formatPrayerTime12h(item.time, language)}${isActive ? ' Active' : ''}`}
+                  >
+                    {/* Active Waqt Pill Tag */}
+                    {isActive && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full bg-[#0F5F62] text-white dark:bg-[#B9E2DD] dark:text-[#083B40] text-[8px] font-black uppercase tracking-wider shadow-xs flex items-center gap-1 whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white dark:bg-[#083B40] animate-ping" />
+                        <span>{language === 'bn' ? 'চলমান' : 'Active'}</span>
+                      </span>
+                    )}
+
+                    {/* Waqt Icon */}
+                    <span className="text-sm sm:text-base select-none leading-none pt-0.5">
+                      {item.icon}
+                    </span>
+
+                    {/* Waqt Name */}
+                    <span
+                      className={`text-[10px] xs:text-[10.5px] sm:text-xs font-bold truncate max-w-full leading-tight mt-0.5 ${
+                        isActive
+                          ? 'text-[#0F5F62] dark:text-[#B9E2DD] font-black'
+                          : 'text-[#123234] dark:text-slate-200'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+
+                    {/* Waqt Time */}
+                    <span
+                      className={`text-[9.5px] xs:text-[10.5px] sm:text-[11.5px] font-bold font-mono tabular-nums leading-none pb-0.5 ${
+                        isActive
+                          ? 'text-[#0F5F62] dark:text-[#B9E2DD] font-black'
+                          : 'text-[#123234]/80 dark:text-slate-300'
+                      }`}
+                    >
+                      {formatPrayerTime12h(item.time, language)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 3.5. AYYAM-E-BIZ (13, 14, 15 HIJRI) MINIMAL PHONE-FRIENDLY CARD */}
+      {/* 3. CONTINUE QURAN READING (FOCUSED CALM DEFAULT) */}
+      {isWidgetEnabled('continueQuran') && (
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 p-4 sm:p-4.5 shadow-xs hover:border-[#0F5F62]/50 transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center shrink-0 border border-[#B9E2DD]/50 shadow-2xs">
+                <BookOpen className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F5F62] dark:text-[#B9E2DD]">
+                    {language === 'bn' ? 'সর্বশেষ পঠিত কুরআন' : 'Last Read Quran'}
+                  </span>
+                  {lastReadQuran && (
+                    <span className="px-2 py-0.5 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] text-[10px] font-bold font-mono border border-[#B9E2DD]/60">
+                      {toBn(lastReadQuran.progressPercent)}% {language === 'bn' ? 'সম্পন্ন' : 'done'}
+                    </span>
+                  )}
+                </div>
+                <h4 className={`text-sm sm:text-base font-bold text-[#123234] dark:text-white truncate mt-0.5 ${language === 'bn' ? 'font-bengali' : 'font-sans'}`}>
+                  {lastReadQuran
+                    ? (language === 'bn'
+                        ? `সূরা ${lastReadQuran.surahNameBn} • আয়াত ${toBn(lastReadQuran.ayahNumber)}`
+                        : `Surah ${lastReadQuran.surahNameEn || lastReadQuran.surahNameBn} • Ayah ${lastReadQuran.ayahNumber}`)
+                    : (language === 'bn' ? 'কুরআন তিলাওয়াত শুরু করুন' : 'Start Reading Quran')}
+                </h4>
+                <p className={`text-xs text-slate-500 dark:text-slate-300 truncate ${language === 'bn' ? 'font-bengali' : 'font-sans'}`}>
+                  {lastReadQuran
+                    ? (language === 'bn'
+                        ? `পৃষ্ঠা ${toBn(lastReadQuran.pageNumber)} · মোট ${toBn(lastReadQuran.totalAyahs)} আয়াত`
+                        : `Page ${lastReadQuran.pageNumber} · ${lastReadQuran.totalAyahs} Ayahs`)
+                    : (language === 'bn' ? 'সূরা আল-ফাতিহা থেকে শুরু করুন' : 'Begin with Surah Al-Fatihah')}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                if (lastReadQuran) {
+                  onNavigate('quran', { surah: lastReadQuran.surahNumber, ayah: lastReadQuran.ayahNumber });
+                } else {
+                  onNavigate('quran', { surah: 1, ayah: 1 });
+                }
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl sm:rounded-2xl bg-[#0F5F62] hover:bg-[#083B40] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xs cursor-pointer shrink-0"
+            >
+              <span>{lastReadQuran ? (language === 'bn' ? 'পড়া চালিয়ে যান' : 'Continue Reading') : (language === 'bn' ? 'কুরআন পড়ুন' : 'Read Quran')}</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Progress Bar */}
+          {lastReadQuran && (
+            <div className="mt-3 pt-2.5 border-t border-[#B9E2DD]/40 dark:border-[#0F5F62]/40">
+              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-300 mb-1">
+                <span>{language === 'bn' ? 'পড়ার অগ্রগতি' : 'Reading Progress'}</span>
+                <span className="font-mono font-bold text-[#0F5F62] dark:text-[#B9E2DD]">
+                  {toBn(lastReadQuran.ayahNumber)} / {toBn(lastReadQuran.totalAyahs)} {language === 'bn' ? 'আয়াত' : 'Ayahs'}
+                </span>
+              </div>
+              <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#0F5F62] dark:bg-[#B9E2DD] transition-all duration-500"
+                  style={{ width: `${Math.max(3, lastReadQuran.progressPercent)}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. PLAY DAILY RUQYAH (FOCUSED CALM DEFAULT) */}
+      {isWidgetEnabled('dailyRuqyah') && (
+        <DailyRuqyahCard
+          language={language}
+          onNavigate={onNavigate}
+        />
+      )}
+
+      {/* 5. QUICK ACCESS GRID (FOCUSED CALM DEFAULT) */}
+      {isWidgetEnabled('quickAccess') && (
+        <div className="bg-white dark:bg-[#083B40]/40 rounded-2xl p-3 sm:p-4 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 shadow-xs space-y-2.5">
+          <div className="flex items-center justify-between px-0.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#083B40] dark:text-[#B9E2DD]">
+              {t.quickLinks || 'দ্রুত প্রবেশ'}
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1.5 xs:gap-2 sm:gap-2.5">
+            {/* 1. Quran */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('quran');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <BookOpen className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {t.quran}
+              </span>
+            </button>
+
+            {/* 2. Prayer */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('prayer');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <Clock className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {t.prayer}
+              </span>
+            </button>
+
+            {/* 3. Tasbeeh */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('tasbeeh');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <Sparkles className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {t.tasbeeh}
+              </span>
+            </button>
+
+            {/* 4. Dua */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('dua');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <Heart className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {t.dua}
+              </span>
+            </button>
+
+            {/* 5. Ruqyah */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('ruqyah');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <Shield className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {language === 'bn' ? 'রুকইয়াহ' : 'Ruqyah'}
+              </span>
+            </button>
+
+            {/* 6. Salah Guide */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('salahGuide');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <BookmarkCheck className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {t.salahGuide}
+              </span>
+            </button>
+
+            {/* 7. Qibla */}
+            <button
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('qibla');
+              }}
+              className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+            >
+              <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                <Compass className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+              </div>
+              <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                {t.qibla}
+              </span>
+            </button>
+
+            {/* 8. Hadith or Period Tracker */}
+            {gender === 'female' ? (
+              <button
+                onClick={() => {
+                  triggerHaptic(15);
+                  onNavigate('tracker');
+                }}
+                className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+              >
+                <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                  <Heart className="w-4 h-4 xs:w-5 xs:h-5 fill-current text-[#0F5F62] dark:text-[#B9E2DD]" />
+                </div>
+                <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                  {language === 'bn' ? 'পবিত্রতা ও তাহরাত' : 'Period Tracker'}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  triggerHaptic(15);
+                  onNavigate('hadith');
+                }}
+                className="flex flex-col items-center justify-center p-1.5 xs:p-2 sm:p-2.5 rounded-xl hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-all duration-200 active:scale-95 text-center min-h-[66px] xs:min-h-[72px] cursor-pointer"
+              >
+                <div className="w-10 h-10 xs:w-11 xs:h-11 rounded-full bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/40 flex items-center justify-center mb-1 shadow-2xs shrink-0">
+                  <BookOpen className="w-4 h-4 xs:w-5 xs:h-5 stroke-[2]" />
+                </div>
+                <span className="text-[10px] xs:text-[11px] font-semibold text-[#123234] dark:text-slate-200 truncate w-full">
+                  {language === 'bn' ? 'সহিহ হাদিস' : 'Hadith'}
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* AYYAM-E-BIZ (13, 14, 15 HIJRI) MINIMAL CARD */}
       {ayyamBiz.isActive && !ayyamBizDismissed && (
-        <div className="rounded-2xl bg-linear-to-r from-[#0F5F62] via-[#0D4E50] to-[#072F31] text-white p-3 shadow-xs border border-[#1FB5A2]/30 space-y-2 animate-in fade-in duration-200">
+        <div className="rounded-2xl bg-linear-to-r from-[#0F5F62] via-[#0D4E50] to-[#083B40] text-white p-3 shadow-xs border border-[#B9E2DD]/30 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className="w-7 h-7 rounded-xl bg-[#B9E2DD]/20 text-[#B9E2DD] flex items-center justify-center shrink-0 text-xs">
@@ -900,38 +1147,28 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
           </div>
 
-          {/* Minimal Expandable Drawer: Dates & Niyyah */}
           {showAyyamBizNiyyah && (
-            <div className="pt-2 border-t border-white/15 space-y-2 text-xs animate-in fade-in duration-150">
-              {/* 3 Days compact row */}
+            <div className="pt-2 border-t border-white/15 space-y-2 text-xs">
               <div className="grid grid-cols-3 gap-1 text-[10px]">
                 <div className={`p-1.5 rounded-lg border text-center ${
-                  ayyamBiz.hijriDay === 13
-                    ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold'
-                    : 'bg-black/20 border-white/10 text-white/80'
+                  ayyamBiz.hijriDay === 13 ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold' : 'bg-black/20 border-white/10 text-white/80'
                 }`}>
                   <span className="block text-[#B9E2DD]">১ম (১৩ হিজরি)</span>
                   <span className="block font-semibold">{ayyamBiz.dates.day13Bn.split(',')[1] || ayyamBiz.dates.day13Bn}</span>
                 </div>
                 <div className={`p-1.5 rounded-lg border text-center ${
-                  ayyamBiz.hijriDay === 14
-                    ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold'
-                    : 'bg-black/20 border-white/10 text-white/80'
+                  ayyamBiz.hijriDay === 14 ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold' : 'bg-black/20 border-white/10 text-white/80'
                 }`}>
                   <span className="block text-[#B9E2DD]">২য় (১৪ হিজরি)</span>
                   <span className="block font-semibold">{ayyamBiz.dates.day14Bn.split(',')[1] || ayyamBiz.dates.day14Bn}</span>
                 </div>
                 <div className={`p-1.5 rounded-lg border text-center ${
-                  ayyamBiz.hijriDay === 15
-                    ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold'
-                    : 'bg-black/20 border-white/10 text-white/80'
+                  ayyamBiz.hijriDay === 15 ? 'bg-[#B9E2DD]/30 border-[#B9E2DD] text-white font-bold' : 'bg-black/20 border-white/10 text-white/80'
                 }`}>
                   <span className="block text-[#B9E2DD]">৩য় (১৫ হিজরি)</span>
                   <span className="block font-semibold">{ayyamBiz.dates.day15Bn.split(',')[1] || ayyamBiz.dates.day15Bn}</span>
                 </div>
               </div>
-
-              {/* Niyyah & Virtue */}
               <div className="p-2 rounded-xl bg-black/30 border border-white/10 space-y-1 text-[11px]">
                 <p className="font-uthmani text-sm text-right text-white font-bold" dir="rtl">
                   {ayyamBiz.niyyahAr}
@@ -948,703 +1185,252 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       )}
 
-      {/* 3.6. QURAN AUTO-RESUME READING TRACKER CARD */}
-      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] p-4 sm:p-4.5 shadow-2xs hover:shadow-xs transition-all">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#0F5F62]/10 dark:bg-[#0F5F62]/30 text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center shrink-0 border border-[#0F5F62]/20 shadow-2xs">
-              <BookOpen className="w-5 h-5 stroke-[2.2]" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#0F5F62] dark:text-[#B9E2DD]">
-                  {language === 'bn' ? 'সর্বশেষ পঠিত কুরআন' : 'Last Read Quran'}
-                </span>
-                {lastReadQuran && (
-                  <span className="px-2 py-0.5 rounded-full bg-[#0F5F62]/10 dark:bg-[#0F5F62]/30 text-[#0F5F62] dark:text-[#B9E2DD] text-[10px] font-bold font-mono">
-                    {toBn(lastReadQuran.progressPercent)}% {language === 'bn' ? 'সম্পন্ন' : 'done'}
-                  </span>
-                )}
-              </div>
-              <h4 className="text-sm sm:text-base font-bold text-[#10235A] dark:text-white font-bengali truncate mt-0.5">
-                {lastReadQuran
-                  ? (language === 'bn'
-                      ? `সূরা ${lastReadQuran.surahNameBn} • আয়াত ${toBn(lastReadQuran.ayahNumber)}`
-                      : `Surah ${lastReadQuran.surahNameBn} • Ayah ${lastReadQuran.ayahNumber}`)
-                  : (language === 'bn' ? 'কুরআন তিলাওয়াত শুরু করুন' : 'Start Reading Quran')}
-              </h4>
-              <p className="text-xs text-muted-slate font-bengali truncate">
-                {lastReadQuran
-                  ? (language === 'bn'
-                      ? `পৃষ্ঠা ${toBn(lastReadQuran.pageNumber)} · মোট ${toBn(lastReadQuran.totalAyahs)} আয়াত`
-                      : `Page ${lastReadQuran.pageNumber} · ${lastReadQuran.totalAyahs} Ayahs`)
-                  : (language === 'bn' ? 'সূরা আল-ফাতিহা থেকে শুরু করুন' : 'Begin with Surah Al-Fatihah')}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              if (lastReadQuran) {
-                onNavigate('quran', { surah: lastReadQuran.surahNumber, ayah: lastReadQuran.ayahNumber });
-              } else {
-                onNavigate('quran', { surah: 1, ayah: 1 });
-              }
-            }}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-[#0F5F62] hover:bg-[#123234] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xs cursor-pointer shrink-0"
-          >
-            <span>{lastReadQuran ? (language === 'bn' ? 'পড়া চালিয়ে যান' : 'Continue Reading') : (language === 'bn' ? 'কুরআন পড়ুন' : 'Read Quran')}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Progress Bar */}
-        {lastReadQuran && (
-          <div className="mt-3 pt-2.5 border-t border-[#E7D9DE]/60 dark:border-[#1C2D5A]">
-            <div className="flex items-center justify-between text-[11px] text-muted-slate mb-1">
-              <span>{language === 'bn' ? 'পড়ার অগ্রগতি' : 'Reading Progress'}</span>
-              <span className="font-mono font-bold text-[#0F5F62] dark:text-[#B9E2DD]">
-                {toBn(lastReadQuran.ayahNumber)} / {toBn(lastReadQuran.totalAyahs)} {language === 'bn' ? 'আয়াত' : 'Ayahs'}
-              </span>
-            </div>
-            <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-linear-to-r from-[#0F5F62] to-[#1FB5A2] transition-all duration-500"
-                style={{ width: `${Math.max(3, lastReadQuran.progressPercent)}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 4. QUICK ACCESS GRID ("দ্রুত প্রবেশ") - Placed right below */}
-      <div className="bg-white dark:bg-[#142042] rounded-2xl p-3 sm:p-4 border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xs space-y-2.5">
-        <div className="flex items-center justify-between px-0.5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-[#10235A] dark:text-[#E9B7C3]">
-            {t.quickLinks || 'দ্রুত প্রবেশ'}
-          </h3>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
-          {/* 1. Quran */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('quran');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <BookOpen className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {t.quran}
-            </span>
-          </button>
-
-          {/* 2. Prayer */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('prayer');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <Clock className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {t.prayer}
-            </span>
-          </button>
-
-          {/* 3. Tasbeeh */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('tasbeeh');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <Sparkles className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {t.tasbeeh}
-            </span>
-          </button>
-
-          {/* 4. Dua */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('dua');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <Heart className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {t.dua}
-            </span>
-          </button>
-
-          {/* 5. Ruqyah */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('ruqyah');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <Shield className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {language === 'bn' ? 'রুকইয়াহ' : 'Ruqyah'}
-            </span>
-          </button>
-
-          {/* 6. Salah Guide */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('salahGuide');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <BookmarkCheck className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {t.salahGuide}
-            </span>
-          </button>
-
-          {/* 7. Qibla */}
-          <button
-            onClick={() => {
-              triggerHaptic(15);
-              onNavigate('qibla');
-            }}
-            className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-          >
-            <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-              <Compass className="w-5 h-5 stroke-[2]" />
-            </div>
-            <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-              {t.qibla}
-            </span>
-          </button>
-
-          {/* 8. Hadith or Period Tracker */}
-          {gender === 'female' ? (
-            <button
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('tracker');
-              }}
-              className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-            >
-              <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-                <Heart className="w-5 h-5 fill-current text-[#21409A] dark:text-[#E9B7C3]" />
-              </div>
-              <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-                {language === 'bn' ? 'পবিত্রতা ও তাহরাত' : 'Period Tracker'}
-              </span>
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('hadith');
-              }}
-              className="flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl hover:bg-[#F8E8ED]/60 dark:hover:bg-[#1C2D5A] transition-all duration-200 active:scale-95 text-center min-h-[72px] cursor-pointer"
-            >
-              <div className="w-11 h-11 rounded-full bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center mb-1 shadow-2xs">
-                <BookOpen className="w-5 h-5 stroke-[2]" />
-              </div>
-              <span className="text-[11px] font-semibold text-[#1F2937] dark:text-slate-200 truncate w-full">
-                {t.hadith}
-              </span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* 4.5. GENTLE PERIOD REMINDER BANNER FOR FEMALE USERS */}
+      {/* GENTLE PERIOD REMINDER BANNER (PRIVATE & SENSITIVE) */}
       {gender === 'female' && periodStatus && (periodStatus.isApproaching || periodStatus.isActive) && !periodBannerDismissed && (
-        <div className="rounded-3xl bg-linear-to-r from-pink-50 via-rose-50 to-pink-100/70 dark:from-[#2A1224] dark:via-[#35162D] dark:to-[#220E1E] border border-pink-200 dark:border-pink-900/60 p-4 shadow-xs space-y-2.5 transition-all">
+        <div className="rounded-2xl bg-[#F3FAF9] dark:bg-[#083B40]/40 border border-[#B9E2DD] dark:border-[#0F5F62] p-3.5 shadow-xs space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-pink-100 dark:bg-pink-950/80 text-pink-600 dark:text-pink-300 flex items-center justify-center shrink-0 shadow-2xs">
-                <Heart className="w-5 h-5 fill-current text-pink-500 dark:text-pink-400" />
+              <div className="w-9 h-9 rounded-xl bg-[#0F5F62]/10 text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center shrink-0">
+                <Heart className="w-4.5 h-4.5 fill-current text-[#0F5F62] dark:text-[#B9E2DD]" />
               </div>
               <div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h4 className="text-sm font-bold text-pink-950 dark:text-pink-100">
-                    {language === 'bn'
-                      ? (periodStatus.isActive ? 'তাহরাত ও স্বাস্থ্য সতর্কতা (মাসিক চলমান)' : 'আসন্ন পিরিয়ডের রিমাইন্ডার')
-                      : (periodStatus.isActive ? 'Taharah & Health Notice (Period active)' : 'Upcoming Period Reminder')}
-                  </h4>
-                  <span className="px-2 py-0.5 rounded-full bg-pink-200/80 dark:bg-pink-900/80 text-pink-800 dark:text-pink-200 text-[10px] font-bold">
-                    {periodStatus.isActive
-                      ? (language === 'bn' ? 'চক্র চলমান' : 'Cycle Active')
-                      : periodStatus.daysRemaining === 0
-                      ? (language === 'bn' ? 'আজ সম্ভাব্য দিন' : 'Expected Today')
-                      : (language === 'bn' ? `আর ${toBn(periodStatus.daysRemaining)} দিন পর` : `In ${periodStatus.daysRemaining} days`)}
-                  </span>
-                </div>
-                <p className="text-xs text-pink-900/80 dark:text-pink-200/80 mt-0.5">
+                <h4 className="text-xs font-bold text-[#123234] dark:text-white">
+                  {language === 'bn'
+                    ? (periodStatus.isActive ? 'পবিত্রতা ও তাহরাত সতর্কতা (মাসিক চলমান)' : 'আসন্ন পিরিয়ডের রিমাইন্ডার')
+                    : (periodStatus.isActive ? 'Taharah & Health Notice' : 'Upcoming Period Reminder')}
+                </h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300">
                   {periodStatus.isActive
-                    ? (language === 'bn'
-                        ? 'আপনার মাসিক চক্রের দিন চলমান। নামাজ ও রোজা থেকে বিরতি এবং শারীরিক বিশ্রাম বজায় রাখুন।'
-                        : 'Your monthly cycle is active. Pause prayers and fasting, and take care of your health.')
-                    : periodStatus.daysRemaining === 0
-                    ? (language === 'bn'
-                        ? `আজ আপনার সম্ভাব্য পিরিয়ডের তারিখ (${periodStatus.nextDateFormatted})। প্রয়োজনীয় প্রস্তুতি সঙ্গে রাখুন।`
-                        : `Your cycle is expected today (${periodStatus.nextDateFormatted}). Keep care essentials handy.`)
-                    : (language === 'bn'
-                        ? `সম্ভাব্য তারিখ: ${periodStatus.nextDateFormatted}। প্রয়োজনীয় প্রস্তুতি ও সুরক্ষা সঙ্গে রাখুন।`
-                        : `Expected date: ${periodStatus.nextDateFormatted}. Keep supplies and essentials handy.`)}
+                    ? (language === 'bn' ? 'আপনার মাসিক চক্র চলমান। শারীরিক যত্ন ও বিশ্রাম বজায় রাখুন।' : 'Monthly cycle is active. Prioritize rest.')
+                    : (language === 'bn' ? `সম্ভাব্য তারিখ: ${periodStatus.nextDateFormatted}` : `Expected: ${periodStatus.nextDateFormatted}`)}
                 </p>
               </div>
             </div>
-
             <button
               type="button"
               onClick={() => {
                 triggerHaptic(10);
                 setPeriodBannerDismissed(true);
               }}
-              className="text-pink-400 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-200 p-1 rounded-lg transition-colors cursor-pointer shrink-0"
-              title={language === 'bn' ? 'বার্তাটি বন্ধ করুন' : 'Dismiss notice'}
+              className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-
-          <div className="flex items-center justify-between pt-1 border-t border-pink-200/60 dark:border-pink-900/50 text-xs">
-            <span className="text-[11px] text-pink-700/80 dark:text-pink-300/80">
-              {language === 'bn' ? '🔒 অন-ডিভাইস এনক্রিপ্টেড ও সম্পূর্ণ ব্যক্তিগত' : '🔒 On-device encrypted & fully private'}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('tracker');
-              }}
-              className="text-xs font-bold text-pink-700 dark:text-pink-300 hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>{language === 'bn' ? 'ট্র্যাকার ওপেন করুন' : 'Open Tracker'}</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       )}
 
-      {/* 5. THURSDAY POST-MAGHRIB & FRIDAY SPECIAL AMALS WIDGET */}
-      {showJumuahWidget && (
-        <div className="rounded-3xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] border-t-4 border-t-[#21409A] p-4 sm:p-5 shadow-2xs space-y-3.5 transition-all">
-          <div className="flex items-start justify-between gap-2 border-b border-[#E7D9DE] dark:border-[#1C2D5A] pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center font-bold text-xl shrink-0">
-                {isThursdayPostMaghrib ? '🌙' : '🕌'}
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <h3 className="text-sm sm:text-base font-extrabold text-[#1F2937] dark:text-white leading-tight">
-                    {isThursdayPostMaghrib
-                      ? (language === 'bn' ? 'পবিত্র জুমু\'আর রাত (মাগরিব পরবর্তী আমল)' : 'Blessed Jumuah Night (Post-Maghrib Sunnah)')
-                      : (language === 'bn' ? 'পবিত্র জুমু\'আ মুবারক — বিশেষ আমল ও ফযীলত' : 'Blessed Jumuah Mubarak — Sunnah Acts & Virtues')}
-                  </h3>
-                  <span className="px-2 py-0.5 rounded-full bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-[#E9B7C3] text-[10px] font-bold border border-[#E7D9DE] dark:border-[#24386E]">
-                    {isThursdayPostMaghrib
-                      ? (language === 'bn' ? 'বৃহস্পতিবার মাগরিব পরবর্তী' : 'Thursday Post-Maghrib')
-                      : (language === 'bn' ? 'সপ্তাহের শ্রেষ্ঠ দিন' : 'Best Day of the Week')}
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#6B7280] dark:text-slate-300 mt-1 leading-snug">
-                  {isThursdayPostMaghrib
-                    ? (language === 'bn'
-                        ? 'সূর্যাস্তের পর থেকেই বরকতময় জুমু\'আর রাত শুরু হয়েছে। হাদিসে বর্ণিত আমল ও সওয়াবসমূহ:'
-                        : 'The blessed night of Jumuah has begun after sunset. Virtues and Sunnah deeds from Hadith:')
-                    : (language === 'bn'
-                        ? 'আজ সাইয়্যিদুল আইয়্যাম (জুমু\'আ)। হাদিসে বর্ণিত বরকতময় আমল, সওয়াব ও ফযীলতসমূহ:'
-                        : 'Today is Sayyidul Ayyam (Friday). Authentic Sunnah deeds, rewards and virtues:')}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                triggerHaptic(15);
-                setIsJumuahCardExpanded(!isJumuahCardExpanded);
-              }}
-              className="text-xs text-[#10235A] dark:text-[#E9B7C3] hover:underline flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#F8E8ED] dark:bg-[#1C2D5A] font-bold shrink-0 cursor-pointer"
-            >
-              <span>
-                {isJumuahCardExpanded
-                  ? (language === 'bn' ? 'সংক্ষেপ' : 'Collapse')
-                  : (language === 'bn' ? 'আমল তালিকা' : 'View Deeds')}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isJumuahCardExpanded ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
-
-          {/* Quick Surah Kahf Action */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F8E8ED]/70 dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#24386E]">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#21409A] text-white flex items-center justify-center shrink-0">
-                <BookOpen className="w-4 h-4" />
-              </div>
-              <div>
-                <span className="text-xs font-bold text-[#1F2937] dark:text-white block">
-                  {language === 'bn' ? 'সূরা আল-কাহফ তিলাওয়াত' : 'Recitation of Surah Al-Kahf'}
-                </span>
-                <span className="text-[10px] text-[#21409A] dark:text-[#E9B7C3] block">
-                  {language === 'bn' ? 'এক জুমু\'আ থেকে অন্য জুমু\'আ পর্যন্ত নূরের আলোকবর্তিকা' : 'A beacon of divine light from one Friday to the next'}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                triggerHaptic(15);
-                onNavigate('quran', 18);
-              }}
-              className="px-3 py-1.5 rounded-xl bg-[#21409A] hover:bg-[#10235A] text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1 shrink-0"
-            >
-              <span>{language === 'bn' ? 'সূরা কাহফ পড়ুন' : 'Read Surah Kahf'}</span>
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
-
-          {/* Detailed Amals List - SERIAL ORDER (NOT CHECKLIST) */}
-          {isJumuahCardExpanded && (
-            <div className="space-y-2.5 pt-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#10235A] dark:text-[#E9B7C3] block">
-                {language === 'bn' ? 'আজকের করণীয় আমল ও অফুরন্ত সওয়াব (ধারাবাহিক নির্দেশনা):' : 'Recommended Sunnah Acts & Virtues (In Sequence):'}
-              </span>
-
-              <div className="grid grid-cols-1 gap-2.5">
-                {jumuahAmalsList.map((amal, index) => (
-                  <div
-                    key={amal.id}
-                    className="p-3.5 rounded-2xl border bg-white dark:bg-[#142042] border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xs transition-all"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-[#21409A] dark:bg-[#E9B7C3] text-white dark:text-[#10235A] text-xs font-bold font-mono flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                        {language === 'bn' ? toBn(index + 1) : index + 1}
-                      </div>
-
-                      <div className="flex-1 space-y-1.5">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <h4 className="text-xs sm:text-sm font-bold leading-tight text-[#1F2937] dark:text-white">
-                            {language === 'bn' ? amal.title : amal.titleEn}
-                          </h4>
-                          {amal.hasQuranAction && (
-                            <button
-                              onClick={() => {
-                                triggerHaptic(15);
-                                onNavigate('quran', 18);
-                              }}
-                              className="text-[10px] text-[#21409A] dark:text-[#E9B7C3] font-bold hover:underline shrink-0 cursor-pointer"
-                            >
-                              {language === 'bn' ? 'তিলাওয়াত →' : 'Recite →'}
-                            </button>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-[#21409A] dark:text-[#E9B7C3] font-semibold leading-snug">
-                          {language === 'bn' ? amal.subtitle : amal.subtitleEn}
-                        </p>
-                        <div className="p-2.5 rounded-xl bg-[#F8E8ED] dark:bg-[#10235A] border border-[#E7D9DE] dark:border-[#24386E] text-[11px] text-[#10235A] dark:text-[#F8E8ED] leading-relaxed font-normal">
-                          <span className="font-bold text-[#21409A] dark:text-[#E9B7C3]">
-                            {language === 'bn' ? '✨ সওয়াব ও ফযীলত: ' : '✨ Reward & Virtue: '}
-                          </span>
-                          {language === 'bn' ? amal.reward : amal.rewardEn}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 6. RUNNING NAFL PRAYER BANNER (OR UPCOMING NAFL TIMES) */}
-      {runningNafl ? (
-        <NaflHeroCard
-          runningNafl={runningNafl}
-          language={language}
-          onNavigate={onNavigate}
-        />
-      ) : (
-        <div
-          onClick={() => {
-            triggerHaptic(15);
-            onNavigate('prayer');
-          }}
-          className="rounded-2xl bg-white dark:bg-[#142042] p-3.5 border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xs cursor-pointer hover:border-[#21409A]/40 transition-all flex items-center justify-between group"
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center shrink-0">
-              <Sparkles className="w-4.5 h-4.5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-bold text-[#1F2937] dark:text-white flex items-center gap-1.5">
-                <span>{language === 'bn' ? 'নফল নামাজের সময়সূচি ও ফজিলত' : 'Nafl Prayer Schedule & Virtues'}</span>
-                <span className="text-[10px] bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-[#E9B7C3] px-1.5 py-0.2 rounded-md font-semibold">
-                  {language === 'bn' ? '১০টি নফল' : '10 Nafl Prayers'}
-                </span>
-              </h4>
-              <div className="flex flex-wrap items-center gap-2 text-[10px] text-[#6B7280] dark:text-slate-400 mt-0.5">
-                <span>{language === 'bn' ? 'ইশরাক' : 'Ishraq'}: {formatPrayerTime12h(prayerTimes.ishraqStart, language)}</span>
-                <span>·</span>
-                <span>{language === 'bn' ? 'চাশত' : 'Chasht'}: {formatPrayerTime12h(prayerTimes.chashtStart, language)}</span>
-                <span>·</span>
-                <span>
-                  {language === 'bn' ? 'তাহাজ্জুদ' : 'Tahajjud'}: {formatPrayerTime12h(prayerTimes.tahajjudStart, language)} - {formatPrayerTime12h(prayerTimes.tahajjudEnd, language)}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-xs font-semibold text-[#21409A] dark:text-[#E9B7C3] group-hover:translate-x-1 transition-transform shrink-0">
-            <span>{language === 'bn' ? 'দেখুন' : 'View'}</span>
-            <ChevronRight className="w-4 h-4" />
-          </div>
-        </div>
-      )}
-
-      {/* 7. DAILY 5 WAQT NAMAZ CHECKLIST & MISSED COUNTER BANNER */}
-      <div
-        onClick={() => {
-          triggerHaptic(15);
-          onNavigate('prayer');
-        }}
-        className="bg-white dark:bg-[#142042] rounded-2xl p-3 border border-[#E7D9DE] dark:border-[#1C2D5A] flex items-center justify-between cursor-pointer hover:border-[#21409A]/40 transition-all active:scale-[0.99] shadow-2xs"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#21409A] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-            ✓
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-[#1F2937] dark:text-slate-200">
-              {language === 'bn' ? 'দৈনিক ৫ ওয়াক্ত সালাত চেকলিস্ট ও মিস হিসাব' : 'Daily 5 Prayers Tracker & Missed Counter'}
-            </h4>
-            <p className="text-[11px] text-[#6B7280] dark:text-slate-400 mt-0.5">
-              {language === 'bn' ? 'আজকের ওয়াক্ত চিহ্নিত করুন এবং এই মাসে কত ওয়াক্ত মিস হয়েছে তা দেখুন' : "Mark today's prayers and review missed prayers this month"}
-            </p>
-          </div>
-        </div>
-        <span className="text-xs font-bold text-[#21409A] dark:text-[#E9B7C3] flex items-center gap-0.5 shrink-0">
-          <span>{language === 'bn' ? 'হিসাব দেখুন' : 'View Tracker'}</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </span>
-      </div>
-
-      {/* 8. DAILY AYAH (Verse of the Day) */}
-      <div className="rounded-3xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] border-t-4 border-t-[#21409A] p-4 sm:p-5 shadow-2xs space-y-3.5 relative overflow-hidden transition-all">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E7D9DE] dark:border-[#1C2D5A] pb-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#21409A] dark:text-[#E9B7C3] flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 stroke-[2]" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-bold text-[#1F2937] dark:text-white">
-                  {t.dailyAyah || (language === 'bn' ? 'আজকের আয়াত' : 'Daily Ayah')}
-                </h4>
-                {todayAyah.themeBn && (
-                  <span className="text-[10px] bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-[#E9B7C3] font-semibold px-2 py-0.5 rounded-full border border-[#E7D9DE] dark:border-[#24386E]">
-                    {language === 'bn' ? todayAyah.themeBn : (todayAyah.themeEn || todayAyah.themeBn)}
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-[#6B7280] dark:text-slate-400">
-                {language === 'bn'
-                  ? `সূরা ${todayAyah.surahNameBn} (${todayAyah.surahNameEn}) · আয়াত ${toBn(todayAyah.ayahNumber)}`
-                  : `Surah ${todayAyah.surahNameEn || todayAyah.surahNumber} · Ayah ${todayAyah.ayahNumber}`}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleRandomizeAyah}
-              className="text-xs text-[#6B7280] dark:text-slate-300 hover:text-[#21409A] dark:hover:text-[#E9B7C3] flex items-center gap-1 transition-colors px-2 py-1.5 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] cursor-pointer"
-              title={language === 'bn' ? 'অন্য আয়াত দেখুন' : 'Show another verse'}
-            >
-              <RotateCw className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
-              <span className="hidden sm:inline font-medium text-[11px]">
-                {language === 'bn' ? 'অন্য আয়াত' : 'New Ayah'}
-              </span>
-            </button>
-
-            <button
-              onClick={handleCopyAyah}
-              className="text-xs text-[#6B7280] dark:text-slate-300 hover:text-[#21409A] dark:hover:text-[#E9B7C3] flex items-center gap-1 transition-colors px-2 py-1.5 rounded-xl hover:bg-[#F8E8ED] dark:hover:bg-[#1C2D5A] cursor-pointer"
-              title={language === 'bn' ? 'শেয়ার করুন' : 'Share'}
-            >
-              {copiedAyah ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-[#21409A]" />
-                  <span className="text-[#21409A] font-medium text-[11px]">
-                    {language === 'bn' ? 'কপি হয়েছে' : 'Copied'}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="sr-only sm:not-sr-only text-[11px]">
-                    {language === 'bn' ? 'শেয়ার' : 'Share'}
-                  </span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Arabic Ayah Text in Deep Navy / Near-Black */}
-        <div className="py-1">
-          <p
-            className="font-uthmani text-xl sm:text-2xl leading-loose text-center text-[#10235A] dark:text-white font-bold select-text"
-            dir="rtl"
-          >
-            {todayAyah.textArabic}
-          </p>
-        </div>
-
-        {/* Translation: Pure English in English mode, Pure Bengali in Bengali mode */}
-        <div className="pt-0.5">
-          <p className={`text-sm sm:text-base text-[#1F2937] dark:text-slate-100 text-center leading-relaxed font-medium ${language === 'bn' ? 'font-bengali' : 'font-sans'}`}>
-            "{language === 'bn' ? todayAyah.translationBn : (todayAyah.translationEn || todayAyah.translationBn)}"
-          </p>
-        </div>
-
-        {/* Audio state banner */}
-        {audioState !== 'idle' && (
-          <div
-            className={`flex items-center justify-between px-3 py-2 rounded-2xl border text-xs font-semibold animate-in fade-in duration-200 ${
-              audioState === 'tilawat'
-                ? 'bg-[#F8E8ED] dark:bg-[#10235A] border-[#E9B7C3] dark:border-[#24386E] text-[#10235A] dark:text-[#F8E8ED]'
-                : 'bg-[#F8E8ED] dark:bg-[#10235A] border-[#21409A]/40 dark:border-[#E9B7C3]/40 text-[#21409A] dark:text-[#E9B7C3]'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Volume2 className="w-4 h-4 animate-pulse shrink-0" />
-              <span>
-                {audioState === 'tilawat'
-                  ? (language === 'bn'
-                      ? `${t.recitingAyah || 'তেলাওয়াত চলছে...'} (সূরা ${todayAyah.surahNameBn} - আয়াত ${toBn(todayAyah.ayahNumber)})`
-                      : `Reciting Ayah... (Surah ${todayAyah.surahNameEn || todayAyah.surahNumber} - Ayah ${todayAyah.ayahNumber})`)
-                  : (language === 'bn'
-                      ? `${t.speakingTranslation || 'অর্থ পাঠ চলছে...'} (অনুবাদ)`
-                      : 'Speaking translation...')}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="w-1 h-3.5 bg-current rounded-full animate-pulse" />
-              <span className="w-1 h-5 bg-current rounded-full animate-pulse delay-75" />
-              <span className="w-1 h-2 bg-current rounded-full animate-pulse delay-150" />
-            </div>
-          </div>
-        )}
-
-        {/* Card Footer Actions */}
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#E7D9DE] dark:border-[#1C2D5A] text-xs">
-          {/* Secondary CTA: Soft Rose / Royal Sapphire Button */}
+      {/* ================================================== */}
+      {/* BELOW THE FOLD: COLLAPSIBLE / CUSTOMIZABLE AMALS & STATS */}
+      {/* ================================================== */}
+      <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-3">
+        {/* Toggle & Customize bar */}
+        <div className="flex items-center justify-between px-1">
           <button
             onClick={() => {
-              if (audioState !== 'idle') {
-                stopAllAyahAudio();
-              } else {
-                handlePlayAyahAudio();
-              }
+              triggerHaptic(10);
+              setShowExtraWidgets(!showExtraWidgets);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all active:scale-95 cursor-pointer shadow-2xs ${
-              audioState !== 'idle'
-                ? 'bg-rose-700 hover:bg-rose-800 text-white'
-                : 'bg-[#F8E8ED] dark:bg-[#1C2D5A] text-[#10235A] dark:text-[#F8E8ED] hover:bg-[#E9B7C3]/40 border border-[#E7D9DE] dark:border-[#24386E]'
-            }`}
-            title={language === 'bn' ? 'আয়াতটির আরবি তেলাওয়াত শুনুন' : 'Listen to Arabic recitation'}
+            className="flex items-center gap-2 text-xs font-bold text-[#0F5F62] dark:text-[#B9E2DD] hover:underline cursor-pointer py-1"
           >
-            {audioState !== 'idle' ? (
-              <>
-                <VolumeX className="w-4 h-4 animate-pulse" />
-                <span>{t.stopAudio || (language === 'bn' ? 'থামান' : 'Stop')}</span>
-              </>
-            ) : (
-              <>
-                <Volume2 className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
-                <span>{language === 'bn' ? 'তিলাওয়াত শুনুন' : 'Listen Tilawat'}</span>
-              </>
-            )}
+            <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showExtraWidgets ? 'rotate-180' : ''}`} />
+            <span>
+              {showExtraWidgets
+                ? (language === 'bn' ? 'অতিরিক্ত আমল ও পরিসংখ্যান সংক্ষেপ করুন' : 'Hide Extra Insights')
+                : (language === 'bn' ? 'আরও আমল, সালাত পরিসংখ্যান ও হাদিস দেখুন' : 'View Salah Stats, Hadith & Deeds')}
+            </span>
           </button>
 
-          {/* Outline CTA: Read in Quran */}
           <button
             onClick={() => {
               triggerHaptic(15);
-              onNavigate('quran', todayAyah.surahNumber);
+              setShowCustomizeModal(true);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl font-bold text-[#21409A] dark:text-[#E9B7C3] hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] transition-all active:scale-95 border border-[#21409A]/40 dark:border-[#E9B7C3]/40 cursor-pointer"
+            className="px-2.5 py-1 rounded-xl bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] border border-[#B9E2DD]/60 hover:bg-[#B9E2DD]/30 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <span>{t.readInQuran || (language === 'bn' ? 'কুরআনে পড়ুন' : 'Read in Quran')}</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>⚙️</span>
+            <span>{language === 'bn' ? 'হোম কাস্টমাইজ' : 'Customize Home'}</span>
           </button>
         </div>
-      </div>
 
-      {/* 9. DAILY HADITH CARD */}
-      <div className="rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] border-t-2 border-t-[#E9B7C3] p-4 shadow-2xs space-y-3">
-        <div className="flex items-center justify-between border-b border-[#E7D9DE]/60 dark:border-[#1C2D5A] pb-2">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#21409A] dark:bg-[#E9B7C3]" />
-            <h4 className="text-xs font-bold text-[#1F2937] dark:text-white">
-              {t.dailyHadith}
-            </h4>
-          </div>
-          <button
-            onClick={handleCopyHadith}
-            className="text-xs text-[#6B7280] dark:text-slate-400 hover:text-[#21409A] flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-[#F8E8ED] dark:hover:bg-[#10235A] cursor-pointer"
-            title={language === 'bn' ? 'কপি / শেয়ার করুন' : 'Copy / Share'}
-          >
-            {copiedHadith ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-[#21409A]" />
-                <span className="text-[#21409A] font-medium">
-                  {language === 'bn' ? 'কপি হয়েছে' : 'Copied'}
-                </span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-3.5 h-3.5" />
-                <span>{language === 'bn' ? 'শেয়ার' : 'Share'}</span>
-              </>
+        {/* Collapsible content (or widgets explicitly enabled by user) */}
+        {(showExtraWidgets || isWidgetEnabled('salahStreak') || isWidgetEnabled('dailyAyah') || isWidgetEnabled('dailyHadith')) && (
+          <div className="space-y-3 pt-1">
+            {/* SALAH COMPLETION STREAK */}
+            {(showExtraWidgets || isWidgetEnabled('salahStreak')) && (
+              <DailyPrayerStreakCard
+                language={language}
+                onNavigate={onNavigate}
+                toBn={toBn}
+                activeWaqt={waqtStatus.currentWaqt}
+              />
             )}
-          </button>
-        </div>
 
-        <p className="font-uthmani text-lg leading-relaxed text-right text-[#10235A] dark:text-slate-100 block mb-2 font-bold" dir="rtl">
-          {todayHadith.arabic}
-        </p>
+            {/* 7 DAYS PRAYER COMPLETION STATS */}
+            {(showExtraWidgets || isWidgetEnabled('salahStreak')) && (
+              <PrayerWeeklyChartCard
+                language={language}
+                onNavigate={onNavigate}
+                toBn={toBn}
+              />
+            )}
 
-        <p className={`text-sm text-[#1F2937] dark:text-slate-200 leading-normal text-left block ${language === 'bn' ? 'font-bengali' : 'font-sans'}`} dir="ltr">
-          "{language === 'bn' ? todayHadith.translationBn : (todayHadith.translationEn || todayHadith.translationBn)}"
-        </p>
+            {/* DAILY AYAH WIDGET */}
+            {(showExtraWidgets || isWidgetEnabled('dailyAyah')) && (
+              <DailyAyahWidget
+                language={language}
+                onNavigate={onNavigate}
+                toBn={toBn}
+              />
+            )}
 
-        <div className="flex items-center justify-between text-xs text-[#6B7280] dark:text-slate-400 pt-1">
-          <span>{language === 'bn' ? todayHadith.sourceBn : (todayHadith.source || todayHadith.sourceBn)}</span>
-          <span className="text-[11px] text-[#21409A] dark:text-[#E9B7C3] font-semibold">
-            {language === 'bn' ? todayHadith.gradeBn : (todayHadith.grade || todayHadith.gradeBn)}
-          </span>
-        </div>
+            {/* DAILY SAHIH HADITH WIDGET */}
+            {(showExtraWidgets || isWidgetEnabled('dailyHadith')) && (
+              <DailyHadithWidget
+                language={language}
+                onNavigate={onNavigate}
+                toBn={toBn}
+              />
+            )}
+
+            {/* JUMU'AH SPECIAL AMALS (IF THURSDAY EVENING / FRIDAY) */}
+            {showJumuahWidget && (
+              <div className="rounded-2xl bg-white dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 border-t-4 border-t-[#0F5F62] p-4 shadow-xs space-y-3 transition-all">
+                <div className="flex items-start justify-between gap-2 border-b border-[#B9E2DD]/40 pb-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center font-bold text-lg shrink-0">
+                      {isThursdayPostMaghrib ? '🌙' : '🕌'}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#123234] dark:text-white leading-tight">
+                        {isThursdayPostMaghrib
+                          ? (language === 'bn' ? 'পবিত্র জুমু\'আর রাত (মাগরিব পরবর্তী আমল)' : 'Blessed Jumuah Night')
+                          : (language === 'bn' ? 'পবিত্র জুমু\'আ মুবারক — বিশেষ আমল' : 'Blessed Jumuah Mubarak')}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-300">
+                        {language === 'bn' ? 'সুন্নাহ সম্মত আমল ও অফুরন্ত সওয়াব' : 'Authentic Sunnah deeds & rewards'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      triggerHaptic(15);
+                      setIsJumuahCardExpanded(!isJumuahCardExpanded);
+                    }}
+                    className="text-xs text-[#0F5F62] dark:text-[#B9E2DD] flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F3FAF9] dark:bg-[#083B40] font-bold shrink-0 cursor-pointer"
+                  >
+                    <span>{isJumuahCardExpanded ? (language === 'bn' ? 'সংক্ষেপ' : 'Collapse') : (language === 'bn' ? 'আমল' : 'Deeds')}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isJumuahCardExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
+
+                {/* Quick Surah Kahf Action */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F3FAF9] dark:bg-[#083B40] border border-[#B9E2DD]/50">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-[#0F5F62] dark:text-[#B9E2DD]" />
+                    <span className="text-xs font-bold text-[#123234] dark:text-white">
+                      {language === 'bn' ? 'সূরা আল-কাহফ তিলাওয়াত' : 'Recitation of Surah Al-Kahf'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      triggerHaptic(15);
+                      onNavigate('quran', 18);
+                    }}
+                    className="px-3 py-1 rounded-lg bg-[#0F5F62] hover:bg-[#083B40] text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    {language === 'bn' ? 'পড়ুন' : 'Read'}
+                  </button>
+                </div>
+
+                {/* Expanded Amals */}
+                {isJumuahCardExpanded && (
+                  <div className="space-y-2 pt-1">
+                    {jumuahAmalsList.map((amal, index) => (
+                      <div key={amal.id} className="p-2.5 rounded-xl border bg-white dark:bg-[#083B40]/60 border-[#B9E2DD]/40 text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[#123234] dark:text-white">
+                            {language === 'bn' ? `${toBn(index + 1)}. ${amal.title}` : `${index + 1}. ${amal.titleEn}`}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#0F5F62] dark:text-[#B9E2DD]">
+                          {language === 'bn' ? amal.reward : amal.rewardEn}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* NAFL PRAYER BANNER */}
+            {runningNafl ? (
+              <NaflHeroCard
+                runningNafl={runningNafl}
+                language={language}
+                onNavigate={onNavigate}
+              />
+            ) : (
+              <div
+                onClick={() => {
+                  triggerHaptic(15);
+                  onNavigate('prayer');
+                }}
+                className="rounded-2xl bg-white dark:bg-[#083B40]/40 p-3 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 shadow-xs cursor-pointer hover:border-[#0F5F62]/50 transition-all flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#F3FAF9] dark:bg-[#083B40] text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#123234] dark:text-white">
+                      {language === 'bn' ? 'নফল নামাজের সময়সূচি ও ফজিলত' : 'Nafl Prayer Schedule & Virtues'}
+                    </h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-300">
+                      {language === 'bn' ? 'ইশরাক, চাশত, তাহাজ্জুদ ও অন্যান্য নফল সালাত' : 'Ishraq, Chasht, Tahajjud & more'}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-[#0F5F62] dark:text-[#B9E2DD]" />
+              </div>
+            )}
+
+            {/* MISSED SALAH BANNER */}
+            <div
+              onClick={() => {
+                triggerHaptic(15);
+                onNavigate('prayer');
+              }}
+              className="bg-white dark:bg-[#083B40]/40 rounded-2xl p-3 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 flex items-center justify-between cursor-pointer hover:border-[#0F5F62]/50 transition-all shadow-xs"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#0F5F62] text-white flex items-center justify-center font-bold text-xs">
+                  ✓
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-[#123234] dark:text-white">
+                    {language === 'bn' ? 'দৈনিক ৫ ওয়াক্ত সালাত চেকলিস্ট ও কাযা হিসাব' : 'Daily 5 Prayers Tracker & Qaza Counter'}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-300">
+                    {language === 'bn' ? 'আজকের ওয়াক্ত ট্র্যাকিং ও কাযা সালাতের হিসাব' : 'Track daily prayers & missed qaza records'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-[#0F5F62] dark:text-[#B9E2DD]" />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* CUSTOMIZE HOME MODAL */}
+      <CustomizeHomeModal
+        isOpen={showCustomizeModal}
+        onClose={() => setShowCustomizeModal(false)}
+        language={language}
+        preferences={preferences}
+        onUpdatePreferences={onUpdatePreferences}
+      />
     </div>
   );
 };

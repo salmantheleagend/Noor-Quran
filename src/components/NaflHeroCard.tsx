@@ -261,13 +261,137 @@ export const NaflHeroCard: React.FC<NaflHeroCardProps> = ({
   const detailButtonText = language === 'bn' ? 'বিস্তারিত' : 'Details';
   const tooltipText = language === 'bn' ? 'কার্ডে ট্যাপ করে নফল নামাজের ডিজাইন পরিবর্তন করুন' : 'Tap card to change prayer card design';
 
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
+
+  // If compact mode is requested (e.g. in PrayerSchedule), render ultra-sleek, slim card like Ayyam Biz fasting
+  if (compact) {
+    return (
+      <div
+        className={`relative overflow-hidden rounded-2xl ${activeStyle.gradientClass} text-white shadow-xs border ${activeStyle.borderClass} select-none transition-all duration-300`}
+      >
+        {/* Mosque Backdrop Art */}
+        {activeStyle.bgImage && (
+          <div className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none opacity-25 mix-blend-luminosity">
+            <img
+              src={activeStyle.bgImage}
+              alt=""
+              role="presentation"
+              loading="eager"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+              className="w-full h-full object-cover object-center filter saturate-125"
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/45 to-transparent" />
+          </div>
+        )}
+
+        {/* Compact Main Row like Ayyam Biz Card */}
+        <div
+          onClick={handleCycleStyle}
+          className="relative z-10 p-2.5 sm:p-3 flex items-center justify-between gap-2.5 cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {/* Mosque Icon with Pulsing Active Aura */}
+            <span
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0 text-xs sm:text-sm font-bold shadow-2xs bg-black/40 border border-white/20"
+              style={{ color: activeStyle.accentColor }}
+            >
+              {activeStyle.icon || '🕌'}
+            </span>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h4 className="text-xs sm:text-[13px] font-bold text-white truncate drop-shadow-xs">
+                  {displayName}
+                </h4>
+                <span className="text-[10px] text-amber-200/90 font-arabic font-semibold" dir="rtl">
+                  ({runningNafl.nameAr})
+                </span>
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 animate-pulse">
+                  {statusBadgeText}
+                </span>
+              </div>
+
+              {/* Inline Time Window and Rakats */}
+              <div className="flex items-center gap-1.5 text-[10.5px] text-slate-200 truncate mt-0.5 font-medium">
+                <span className="font-mono">
+                  {formatPrayerTime12h(runningNafl.startTime, language)} – {formatPrayerTime12h(runningNafl.endTime, language)}
+                </span>
+                <span className="text-white/40">·</span>
+                <span style={{ color: activeStyle.accentColor }} className="font-semibold">
+                  {displayRakat}
+                </span>
+                <span className="text-white/40">·</span>
+                <span className="text-emerald-300 font-mono font-bold">
+                  {remainingText}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons: Palette Cycle & Expand Details */}
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              data-detail-button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerHaptic(15);
+                const nextIdx = (styleIndex + 1) % NAFL_CARD_STYLES.length;
+                setStyleIndex(nextIdx);
+                try {
+                  localStorage.setItem(NAFL_STYLE_STORAGE_KEY, NAFL_CARD_STYLES[nextIdx].id);
+                } catch {
+                  // ignore
+                }
+              }}
+              className="p-1 sm:px-1.5 rounded-lg bg-black/40 hover:bg-black/60 border border-white/20 text-white text-[10px] font-medium flex items-center gap-1 transition-colors cursor-pointer"
+              title={language === 'bn' ? 'কার্ড ডিজাইন পরিবর্তন' : 'Change theme'}
+            >
+              <Palette className="w-3 h-3" style={{ color: activeStyle.accentColor }} />
+              <span className="hidden sm:inline text-[9.5px]">{language === 'bn' ? activeStyle.badgeBn.split(' ')[0] : 'Theme'}</span>
+            </button>
+
+            <button
+              data-detail-button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                triggerHaptic(10);
+                setIsExpanded((prev) => !prev);
+              }}
+              className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+            >
+              <span>{isExpanded ? (language === 'bn' ? 'সংক্ষেপ' : 'Less') : (language === 'bn' ? 'ফজিলত' : 'Virtue')}</span>
+              <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {/* Expandable Drawer for Virtue & Hadith */}
+        {isExpanded && (
+          <div className="relative z-10 px-3 pb-3 pt-1 border-t border-white/15 space-y-2 text-xs text-white animate-in fade-in duration-150">
+            <div className={`p-2.5 rounded-xl backdrop-blur-md border text-[11px] space-y-1 shadow-xs ${activeStyle.quoteBg}`}>
+              <div className="flex items-center gap-1.5 font-bold" style={{ color: activeStyle.accentColor }}>
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>{language === 'bn' ? 'গুরুত্ব ও ফজিলত:' : 'Virtue & Significance:'}</span>
+              </div>
+              <p className="leading-relaxed text-slate-100">
+                {displayVirtue}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       onClick={handleCycleStyle}
       title={tooltipText}
-      className={`relative overflow-hidden rounded-3xl ${activeStyle.gradientClass} text-white shadow-lg border ${activeStyle.borderClass} cursor-pointer active:scale-[0.99] transition-all duration-300 group select-none ${
-        compact ? 'p-4' : 'p-4.5 sm:p-5'
-      }`}
+      className={`relative overflow-hidden rounded-3xl ${activeStyle.gradientClass} text-white shadow-lg border ${activeStyle.borderClass} cursor-pointer active:scale-[0.99] transition-all duration-300 group select-none p-4.5 sm:p-5`}
     >
       {/* World-Famous Mosque Night Sanctuary Backdrop */}
       {activeStyle.bgImage && (

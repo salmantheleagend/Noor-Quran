@@ -130,31 +130,31 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     if (!screenMetrics.isMobile) return '0.75rem'; // Desktop / large screen
 
     // Manual overrides if user set in preferences
-    if (bottomNavSpacing === 'compact') return 'max(env(safe-area-inset-bottom, 0px), 18px)';
-    if (bottomNavSpacing === 'standard') return 'max(env(safe-area-inset-bottom, 0px), 28px)';
-    if (bottomNavSpacing === 'extra') return 'max(env(safe-area-inset-bottom, 0px), 42px)';
+    if (bottomNavSpacing === 'compact') return 'max(calc(env(safe-area-inset-bottom, 0px) + 12px), 28px)';
+    if (bottomNavSpacing === 'standard') return 'max(calc(env(safe-area-inset-bottom, 0px) + 20px), 38px)';
+    if (bottomNavSpacing === 'extra') return 'max(calc(env(safe-area-inset-bottom, 0px) + 32px), 54px)';
 
     // AUTO MODE: Smart screen size & device adaptation
-    // On Android (with 3-button or gesture bars) or PWA standalone mode:
-    if (screenMetrics.isStandalone || screenMetrics.isAndroid) {
-      return 'max(env(safe-area-inset-bottom, 0px), 30px)';
+    // On Android devices with physical or virtual navigation keys (standard 48px height) or PWA standalone mode:
+    if (screenMetrics.isAndroid || screenMetrics.isStandalone) {
+      return 'max(calc(env(safe-area-inset-bottom, 0px) + 28px), 48px)';
     }
 
     // iOS and other mobile devices
     if (screenMetrics.isSmallScreen) {
-      return 'max(env(safe-area-inset-bottom, 0px), 22px)';
+      return 'max(calc(env(safe-area-inset-bottom, 0px) + 16px), 32px)';
     }
-    return 'max(env(safe-area-inset-bottom, 0px), 26px)';
+    return 'max(calc(env(safe-area-inset-bottom, 0px) + 22px), 38px)';
   })();
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/98 dark:bg-[#0E1416]/98 backdrop-blur-xl border-t border-[#D7E9E7] dark:border-[#22353B] transition-all shadow-[0_-4px_25px_rgba(0,0,0,0.08)] select-none pt-1"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-white/98 dark:bg-[#0E1416]/98 backdrop-blur-xl border-t border-[#D7E9E7] dark:border-[#22353B] transition-all shadow-[0_-4px_25px_rgba(0,0,0,0.08)] select-none pt-1.5"
       style={{
         paddingBottom: computedBottomPadding,
       }}
     >
-      <div className="max-w-md mx-auto grid grid-cols-5 min-h-[58px] sm:min-h-[64px] items-center px-1">
+      <div className="max-w-md mx-auto grid grid-cols-5 h-[52px] sm:h-[56px] items-center px-1">
         {navItems.map((item) => {
           const isActive =
             currentTab === item.id ||
@@ -172,11 +172,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className="group flex flex-col items-center justify-center h-full min-h-[52px] py-1 cursor-pointer transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF] active:scale-95"
+              className="group flex flex-col items-center justify-start h-full py-0.5 cursor-pointer transition-all relative focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2DD4BF] active:scale-95"
               aria-label={item.label}
             >
               <div
-                className={`flex flex-col items-center justify-center w-full max-w-[68px] sm:max-w-[76px] py-1 px-1 rounded-2xl transition-all duration-200 relative ${
+                className={`flex flex-col items-center justify-center w-full max-w-[66px] sm:max-w-[74px] py-1 px-1 rounded-2xl transition-all duration-200 relative ${
                   isActive
                     ? 'bg-[#EAF5F4] dark:bg-[#16272B] text-[#083B40] dark:text-[#2DD4BF] shadow-2xs -translate-y-0.5 border border-[#B9E2DD]/80 dark:border-[#2DD4BF]/30'
                     : 'text-slate-600 dark:text-slate-300 hover:text-[#083B40] dark:hover:text-[#2DD4BF]'
@@ -192,10 +192,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 </div>
 
                 <span
-                  className={`w-full text-center mt-1 pb-0.5 transition-colors leading-none tracking-normal font-sans ${
+                  className={`w-full text-center mt-0.5 transition-colors leading-tight tracking-tight font-sans block select-none truncate ${
                     screenMetrics.isVeryNarrow
-                      ? 'text-[10px]'
-                      : 'text-[11px] sm:text-[11.5px]'
+                      ? 'text-[9.5px]'
+                      : 'text-[10.5px] sm:text-[11.5px]'
                   } ${
                     isActive
                       ? 'font-black text-[#083B40] dark:text-[#2DD4BF]'

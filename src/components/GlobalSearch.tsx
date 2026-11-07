@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AppLanguage } from '../types';
 import { SURAH_LIST } from '../data/quranData';
 import { HADITHS_LIST } from '../data/hadithData';
 import { DUAS_LIST } from '../data/duaData';
 import { MASALAS_LIST } from '../data/masalaData';
+import { RUQYAH_ITEMS } from '../data/ruqyahData';
 import { JUZ_LIST } from '../utils/quranPageManager';
 import { triggerHaptic } from '../utils/audioPlayer';
 import { toBn } from '../utils/prayerTimes';
@@ -16,18 +17,54 @@ import {
   ChevronRight,
   ArrowUpRight,
   Filter,
+  Shield,
+  History,
+  Trash2,
 } from 'lucide-react';
 
 export interface GlobalSearchProps {
   language: AppLanguage;
-  onNavigate: (tab: string, surahId?: number) => void;
+  onNavigate: (tab: string, extra?: unknown) => void;
 }
 
-type SearchCategory = 'all' | 'quran' | 'hadith' | 'dua' | 'masala';
+type SearchCategory = 'all' | 'quran' | 'hadith' | 'dua' | 'ruqyah' | 'masala';
 
 export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<SearchCategory>('all');
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('noor_quran_recent_searches');
+      return saved ? JSON.parse(saved) : ['আল-কাহফ', 'আয়াতুল কুরসি', 'রুকইয়াহ', 'তাহাজ্জুদ'];
+    } catch {
+      return ['আল-কাহফ', 'আয়াতুল কুরসি', 'রুকইয়াহ', 'তাহাজ্জুদ'];
+    }
+  });
+
+  const saveToRecent = (q: string) => {
+    const clean = q.trim();
+    if (!clean) return;
+    setRecentSearches((prev) => {
+      const filtered = prev.filter((item) => item.toLowerCase() !== clean.toLowerCase());
+      const next = [clean, ...filtered].slice(0, 8);
+      try {
+        localStorage.setItem('noor_quran_recent_searches', JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const clearRecent = () => {
+    triggerHaptic(10);
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem('noor_quran_recent_searches');
+    } catch {
+      // ignore
+    }
+  };
 
   const popularSearches = [
     { labelBn: 'সূরা আল-কাহফ', labelEn: 'Surah Al-Kahf', query: 'কাহফ', queryEn: 'Kahf' },
@@ -49,6 +86,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
         quran: [],
         hadiths: [],
         duas: [],
+        ruqyah: [],
         masalas: [],
         total: 0,
       };
@@ -116,6 +154,22 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
       );
     });
 
+    // 5. Ruqyah Shar'iyyah
+    const matchedRuqyah = RUQYAH_ITEMS.filter((r) => {
+      const titleBn = (r.titleBn || '').toLowerCase();
+      const translationBn = (r.translationBn || '').toLowerCase();
+      const purposeBn = (r.purposeBn || '').toLowerCase();
+      const source = (r.source || '').toLowerCase();
+      const ar = (r.arabic || '').toLowerCase();
+      return (
+        titleBn.includes(trimmed) ||
+        translationBn.includes(trimmed) ||
+        purposeBn.includes(trimmed) ||
+        source.includes(trimmed) ||
+        ar.includes(trimmed)
+      );
+    });
+
     const quranCombined = [
       ...matchedSurahs.map((s) => ({ type: 'surah' as const, data: s })),
       ...matchedJuz.map((j) => ({ type: 'juz' as const, data: j })),
@@ -125,12 +179,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
       quranCombined.length +
       matchedHadiths.length +
       matchedDuas.length +
+      matchedRuqyah.length +
       matchedMasalas.length;
 
     return {
       quran: quranCombined,
       hadiths: matchedHadiths,
       duas: matchedDuas,
+      ruqyah: matchedRuqyah,
       masalas: matchedMasalas,
       total,
     };
@@ -190,8 +246,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             selectedCategory === 'all'
-              ? 'bg-[#21409A] text-white shadow-2xs'
-              : 'bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E]'
+              ? 'bg-[#0F5F62] text-white shadow-xs'
+              : 'bg-[#F3FAF9] dark:bg-[#083B40] text-[#123234] dark:text-slate-200 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60'
           }`}
         >
           {language === 'bn' ? 'সকল বিষয়' : 'All Topics'}
@@ -205,8 +261,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             selectedCategory === 'quran'
-              ? 'bg-[#21409A] text-white shadow-2xs'
-              : 'bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E]'
+              ? 'bg-[#0F5F62] text-white shadow-xs'
+              : 'bg-[#F3FAF9] dark:bg-[#083B40] text-[#123234] dark:text-slate-200 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60'
           }`}
         >
           {language === 'bn' ? 'কুরআন' : 'Quran'}
@@ -224,8 +280,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             selectedCategory === 'hadith'
-              ? 'bg-[#21409A] text-white shadow-2xs'
-              : 'bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E]'
+              ? 'bg-[#0F5F62] text-white shadow-xs'
+              : 'bg-[#F3FAF9] dark:bg-[#083B40] text-[#123234] dark:text-slate-200 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60'
           }`}
         >
           {language === 'bn' ? 'হাদিস' : 'Hadith'}
@@ -243,8 +299,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             selectedCategory === 'dua'
-              ? 'bg-[#21409A] text-white shadow-2xs'
-              : 'bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E]'
+              ? 'bg-[#0F5F62] text-white shadow-xs'
+              : 'bg-[#F3FAF9] dark:bg-[#083B40] text-[#123234] dark:text-slate-200 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60'
           }`}
         >
           {language === 'bn' ? 'দোআ ও জিকির' : 'Dua & Azkar'}
@@ -258,12 +314,31 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
         <button
           onClick={() => {
             triggerHaptic(10);
+            setSelectedCategory('ruqyah');
+          }}
+          className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
+            selectedCategory === 'ruqyah'
+              ? 'bg-[#0F5F62] text-white shadow-xs'
+              : 'bg-[#F3FAF9] dark:bg-[#083B40] text-[#123234] dark:text-slate-200 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60'
+          }`}
+        >
+          {language === 'bn' ? 'রুকইয়াহ শারইয়াহ' : 'Ruqyah'}
+          <span className="opacity-80 text-[10px] ml-1">
+            {trimmed
+              ? `(${language === 'bn' ? toBn(results.ruqyah.length) : results.ruqyah.length})`
+              : `(${language === 'bn' ? toBn(RUQYAH_ITEMS.length) : RUQYAH_ITEMS.length})`}
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
+            triggerHaptic(10);
             setSelectedCategory('masala');
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             selectedCategory === 'masala'
-              ? 'bg-[#21409A] text-white shadow-2xs'
-              : 'bg-[#F8E8ED] dark:bg-[#10235A] text-[#10235A] dark:text-slate-200 border border-[#E7D9DE] dark:border-[#24386E]'
+              ? 'bg-[#0F5F62] text-white shadow-xs'
+              : 'bg-[#F3FAF9] dark:bg-[#083B40] text-[#123234] dark:text-slate-200 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60'
           }`}
         >
           {language === 'bn' ? 'জরুরি মাসআলা' : 'Masala & Fiqh'}
@@ -278,10 +353,43 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
       {/* Category Content when not searching */}
       {!trimmed && (
         <div className="space-y-4 pt-1">
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && selectedCategory === 'all' && (
+            <div className="space-y-2 p-3 rounded-2xl bg-white dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#123234] dark:text-white flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-[#0F5F62] dark:text-[#B9E2DD]" />
+                  <span>{language === 'bn' ? 'সাম্প্রতিক অনুসন্ধান' : 'Recent Searches'}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={clearRecent}
+                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  {language === 'bn' ? 'মুছে ফেলুন' : 'Clear'}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {recentSearches.map((term, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      triggerHaptic(10);
+                      setSearchQuery(term);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-[#F3FAF9] dark:bg-[#083B40] text-xs font-medium text-[#123234] dark:text-slate-200 hover:bg-[#B9E2DD]/30 transition-colors cursor-pointer border border-[#B9E2DD]/50"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* ALL TOPICS VIEW */}
           {selectedCategory === 'all' && (
             <div className="space-y-3">
-              <span className="text-xs font-bold text-[#10235A] dark:text-slate-300 block">
+              <span className="text-xs font-bold text-[#123234] dark:text-slate-300 block">
                 {language === 'bn' ? 'জনপ্রিয় অনুসন্ধানসমূহ:' : 'Popular Searches:'}
               </span>
               <div className="flex flex-wrap gap-2">
@@ -290,12 +398,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
                     key={i}
                     onClick={() => {
                       triggerHaptic(10);
-                      setSearchQuery(language === 'bn' ? p.query : p.queryEn);
+                      const q = language === 'bn' ? p.query : p.queryEn;
+                      setSearchQuery(q);
+                      saveToRecent(q);
                     }}
-                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] text-xs font-medium text-[#10235A] dark:text-[#E9B7C3] hover:border-[#21409A] hover:bg-[#F8E8ED]/40 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 text-xs font-medium text-[#123234] dark:text-[#B9E2DD] hover:border-[#0F5F62] hover:bg-[#F3FAF9] transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
                   >
                     <span>{language === 'bn' ? p.labelBn : p.labelEn}</span>
-                    <ArrowUpRight className="w-3 h-3 text-[#6B7280]" />
+                    <ArrowUpRight className="w-3 h-3 text-slate-400" />
                   </button>
                 ))}
               </div>
@@ -776,16 +886,70 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
                   </div>
                 )}
 
-              {/* 4. Masala Results */}
+              {/* 4. Ruqyah Results */}
+              {(selectedCategory === 'all' || selectedCategory === 'ruqyah') &&
+                results.ruqyah.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#123234] dark:text-slate-200">
+                      <span className="flex items-center gap-1.5">
+                        <Shield className="w-3.5 h-3.5 text-[#0F5F62] dark:text-[#B9E2DD]" />
+                        <span>{language === 'bn' ? 'রুকইয়াহ শারইয়াহ' : 'Ruqyah Shar’iyyah'}</span>
+                      </span>
+                      <span className="text-slate-500 text-[11px]">
+                        {language === 'bn'
+                          ? `${toBn(results.ruqyah.length)}টি ফলাফল`
+                          : `${results.ruqyah.length} results`}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2">
+                      {results.ruqyah.map((r) => (
+                        <div
+                          key={`ruqyah-${r.id}`}
+                          onClick={() => {
+                            triggerHaptic(15);
+                            saveToRecent(searchQuery);
+                            onNavigate('ruqyah');
+                          }}
+                          className="p-3.5 rounded-2xl bg-white dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 hover:border-[#0F5F62] transition-all cursor-pointer space-y-1.5 shadow-xs group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#0F5F62]/10 text-[#0F5F62] dark:text-[#B9E2DD] font-bold">
+                                {language === 'bn' ? 'রুকইয়াহ' : 'Ruqyah'}
+                              </span>
+                              <h4 className="text-xs sm:text-sm font-bold text-[#123234] dark:text-white group-hover:text-[#0F5F62] transition-colors">
+                                {language === 'bn' ? r.titleBn : r.titleBn}
+                              </h4>
+                            </div>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {r.source}
+                            </span>
+                          </div>
+
+                          <p className="font-uthmani text-sm text-[#0F5F62] dark:text-[#B9E2DD] font-bold text-right line-clamp-1" dir="rtl">
+                            {r.arabic}
+                          </p>
+
+                          <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                            {r.translationBn}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* 5. Masala Results */}
               {(selectedCategory === 'all' || selectedCategory === 'masala') &&
                 results.masalas.length > 0 && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-[#10235A] dark:text-slate-200">
+                    <div className="flex items-center justify-between text-xs font-bold text-[#123234] dark:text-slate-200">
                       <span className="flex items-center gap-1.5">
-                        <HelpCircle className="w-3.5 h-3.5 text-[#21409A] dark:text-[#E9B7C3]" />
+                        <HelpCircle className="w-3.5 h-3.5 text-[#0F5F62] dark:text-[#B9E2DD]" />
                         <span>{language === 'bn' ? 'জরুরি মাসআলা' : 'Fiqh Masala'}</span>
                       </span>
-                      <span className="text-[#6B7280] text-[11px]">
+                      <span className="text-slate-500 text-[11px]">
                         {language === 'bn'
                           ? `${toBn(results.masalas.length)}টি ফলাফল`
                           : `${results.masalas.length} results`}
@@ -798,17 +962,23 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ language, onNavigate
                           key={`masala-${m.id}`}
                           onClick={() => {
                             triggerHaptic(15);
+                            saveToRecent(searchQuery);
                             onNavigate('masala');
                           }}
-                          className="p-3.5 rounded-2xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] hover:border-[#21409A] transition-all cursor-pointer space-y-1.5 shadow-2xs group"
+                          className="p-3.5 rounded-2xl bg-white dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 hover:border-[#0F5F62] transition-all cursor-pointer space-y-1.5 shadow-xs group"
                         >
-                          <h4 className="text-xs sm:text-sm font-bold text-[#10235A] dark:text-white group-hover:text-[#21409A] transition-colors">
-                            {m.questionBn}
-                          </h4>
-                          <p className="text-xs text-[#4B5563] dark:text-slate-300 line-clamp-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#0F5F62]/10 text-[#0F5F62] dark:text-[#B9E2DD] font-bold shrink-0">
+                              {language === 'bn' ? 'মাসআলা' : 'Masala'}
+                            </span>
+                            <h4 className="text-xs sm:text-sm font-bold text-[#123234] dark:text-white group-hover:text-[#0F5F62] transition-colors">
+                              {m.questionBn}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
                             {m.answerBn}
                           </p>
-                          <span className="text-[10px] text-[#21409A] dark:text-[#E9B7C3] font-semibold block pt-0.5">
+                          <span className="text-[10px] text-[#0F5F62] dark:text-[#B9E2DD] font-semibold block pt-0.5">
                             {language === 'bn' ? `দলিল: ${m.references.join(', ')}` : `Reference: ${m.references.join(', ')}`}
                           </span>
                         </div>

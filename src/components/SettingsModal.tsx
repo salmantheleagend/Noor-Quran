@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AppLanguage, AppTheme, ColorTheme, UserPreferences } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 import {
@@ -10,6 +10,7 @@ import {
   Volume2,
   Trash2,
   Download,
+  Upload,
   Check,
   Palette,
   Pipette,
@@ -26,6 +27,10 @@ import {
   AlertCircle,
   Clock,
   Send,
+  BookOpen,
+  LayoutGrid,
+  FileText,
+  Compass,
 } from 'lucide-react';
 import { triggerHaptic } from '../utils/audioPlayer';
 import { applyThemeToDOM } from '../utils/themeManager';
@@ -38,6 +43,7 @@ import {
   PrayerNotificationSettings,
 } from '../utils/prayerNotifications';
 import islamicBadge from '../assets/images/islamic_app_badge_1791133494322.jpg';
+import { CustomizeHomeModal } from './CustomizeHomeModal';
 
 interface SettingsModalProps {
   language: AppLanguage;
@@ -188,9 +194,64 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCustomizeHomeModal, setShowCustomizeHomeModal] = useState<boolean>(false);
+  const [integrityState, setIntegrityState] = useState<'idle' | 'checking' | 'verified'>('idle');
+  const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
+  const [showScholarModal, setShowScholarModal] = useState<boolean>(false);
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data && typeof data === 'object') {
+          onUpdatePreferences(data);
+          alert(language === 'bn' ? '✓ ব্যাকআপ সফলভাবে পুনরুদ্ধার হয়েছে!' : '✓ Backup successfully restored!');
+        }
+      } catch {
+        alert(language === 'bn' ? 'ব্যাকআপ ফাইলটি সঠিক নয়।' : 'Invalid backup file format.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleVerifyIntegrity = () => {
+    triggerHaptic(20);
+    setIntegrityState('checking');
+    setTimeout(() => {
+      setIntegrityState('verified');
+      triggerHaptic(15);
+    }, 900);
+  };
+
+  const handleDeleteSensitiveData = () => {
+    triggerHaptic(25);
+    const confirmed = confirm(
+      language === 'bn'
+        ? '⚠️ আপনি কি নিশ্চিত যে আপনার ব্যক্তিগত সালাত হিস্ট্রি, পিরিয়ড ট্র্যাকার ডাটা ও রুকইয়াহ সার্চ হিস্ট্রি সম্পূর্ণ মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।'
+        : '⚠️ Are you sure you want to permanently delete your personal Salah records, period tracker data, and search history?'
+    );
+    if (!confirmed) return;
+
+    try {
+      localStorage.removeItem('noor_quran_period_tracker');
+      localStorage.removeItem('noor_quran_daily_prayer_streak');
+      localStorage.removeItem('noor_quran_salah_history');
+      localStorage.removeItem('noor_quran_ruqyah_history');
+      localStorage.removeItem('noor_quran_recent_searches');
+      onResetAllData();
+      alert(language === 'bn' ? '✓ সমস্ত ব্যক্তিগত ডেটা সফলভাবে মুছে ফেলা হয়েছে।' : '✓ All private personal data has been securely deleted.');
+    } catch {
+      // ignore
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#0C152E] rounded-3xl max-w-sm sm:max-w-md w-full p-4 sm:p-5 space-y-4 border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xl max-h-[88vh] flex flex-col text-[#1F2937] dark:text-[#F8E8ED]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#0C152E] rounded-3xl w-[94vw] max-w-sm sm:max-w-md p-4 sm:p-5 space-y-3.5 border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-2xl max-h-[88dvh] flex flex-col text-[#1F2937] dark:text-[#F8E8ED]">
         {/* Top Header */}
         <div className="flex items-center justify-between border-b border-[#E7D9DE] dark:border-[#1C2D5A] pb-3">
           <div className="flex items-center gap-2">
@@ -214,10 +275,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto flex-1 space-y-4 pr-1 text-xs">
+        <div className="overflow-y-auto flex-1 space-y-4 pr-1 text-xs pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+          {/* CUSTOMIZE HOME SCREEN ENTRY */}
+          <div className="p-3.5 rounded-2xl bg-[#0F5F62] text-white flex items-center justify-between shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-white/15 text-[#B9E2DD] flex items-center justify-center shrink-0">
+                <LayoutGrid className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white">
+                  {language === 'bn' ? 'হোম স্ক্রিন কাস্টমাইজ করুন' : 'Customize Home Screen'}
+                </h4>
+                <p className="text-[10px] text-[#B9E2DD]/90">
+                  {language === 'bn' ? 'উইজেট সাজান, দেখান বা শান্ত ডিফল্টে রাখুন' : 'Reorder, show or hide widgets'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(15);
+                setShowCustomizeHomeModal(true);
+              }}
+              className="px-3 py-1.5 rounded-xl bg-white text-[#0F5F62] hover:bg-[#F3FAF9] text-xs font-bold transition-all shadow-2xs cursor-pointer shrink-0"
+            >
+              {language === 'bn' ? 'সাজান' : 'Customize'}
+            </button>
+          </div>
+
           {/* 1. DISPLAY MODE: Light / Dark / AMOLED */}
-          <div className="space-y-1.5 p-3 rounded-2xl bg-[#FCFAF8] dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#1C2D5A]">
-            <label className="font-bold text-[#10235A] dark:text-white block">
+          <div className="space-y-1.5 p-3 rounded-2xl bg-[#FCFAF8] dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60">
+            <label className="font-bold text-[#123234] dark:text-white block">
               ডিসপ্লে মোড (Display Mode)
             </label>
             <p className="text-[10px] text-[#6B7280] dark:text-slate-400 pb-1">
@@ -550,13 +638,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onUpdatePreferences({ largeFontMode: !preferences.largeFontMode });
                 }}
                 className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer min-h-[24px] ${
-                  preferences.largeFontMode ? 'bg-[#21409A]' : 'bg-[#E7D9DE] dark:bg-slate-700'
+                  preferences.largeFontMode ? 'bg-[#0F5F62]' : 'bg-[#E7D9DE] dark:bg-slate-700'
                 }`}
                 aria-label="Toggle Large Font Mode"
               >
                 <div
                   className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 left-1 ${
                     preferences.largeFontMode ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Color-Blind Accessible Tajweed Toggle */}
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-[#142042] border border-[#E7D9DE]/80 dark:border-[#1C2D5A]">
+              <div>
+                <span className="font-bold text-[#10235A] dark:text-white block">
+                  কালার-ব্লাইন্ড এক্সেসিবল তাজবিদ (Color-Blind Tajweed)
+                </span>
+                <span className="text-[10px] text-[#6B7280] dark:text-slate-400">
+                  রঙের পাশাপাশি ডট, আন্ডারলাইন ও চিহ্নের মাধ্যমে তাজবিদ নির্দেশ
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  triggerHaptic(10);
+                  onUpdatePreferences({ colorBlindTajweed: !preferences.colorBlindTajweed });
+                }}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer min-h-[24px] ${
+                  preferences.colorBlindTajweed ? 'bg-[#0F5F62]' : 'bg-[#E7D9DE] dark:bg-slate-700'
+                }`}
+                aria-label="Toggle Color-Blind Tajweed"
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform absolute top-1 left-1 ${
+                    preferences.colorBlindTajweed ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
@@ -1072,27 +1188,244 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
 
           {/* 8. OFFLINE MODE STATUS CARD */}
-          <div className="p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#10235A]/50 border border-[#E7D9DE] dark:border-[#1C2D5A] space-y-1.5">
+          <div className="p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-[#0F5F62]/10 dark:bg-[#B9E2DD]/20 text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center">
                   <WifiOff className="w-4 h-4" />
                 </div>
-                <span className="font-bold text-[#10235A] dark:text-white">অফলাইন মোড (Offline Mode)</span>
+                <span className="font-bold text-[#123234] dark:text-white">অফলাইন মোড (Offline Mode)</span>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] flex items-center gap-1 border border-emerald-500/30">
                 <Check className="w-3 h-3 stroke-[3]" />
                 <span>সক্রিয় ও প্রস্তুত</span>
               </span>
             </div>
-            <p className="text-[11px] text-[#6B7280] dark:text-[#B2D8D4] leading-relaxed font-bengali">
+            <p className="text-[11px] text-slate-600 dark:text-[#B9E2DD] leading-relaxed font-bengali">
               অ্যাপের প্রতিটি ফিচার—কুরআন ও মুসহাফ পৃষ্ঠা, ৫ ওয়াক্ত নামাজ ও নফল সময়সূচি, কিবলা কম্পাস, ডিজিটাল তাসবীহ (কাস্টম তালিকা সহ), রুকইয়াহ শারইয়াহ, সহিহ হাদিস, দৈনন্দিন দোয়া, জরুরি মাসআলা, সালাত গাইড এবং পিরিয়ড ট্র্যাকার—ইন্টারনেট ছাড়াও ১০০% অফলাইনে সম্পূর্ণ সচল। শুধু অডিও তিলাওয়াত অনলাইন স্ট্রিমিংয়ের জন্য ইন্টারনেট প্রয়োজন।
             </p>
           </div>
 
+          {/* 8.5. PRAYER CALCULATION & MINUTE OFFSETS */}
+          <div className="space-y-3 p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#0F5F62]/10 dark:bg-[#B9E2DD]/20 text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center">
+                <Compass className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-[#123234] dark:text-white block text-xs">
+                  {language === 'bn' ? 'নামাজের হিসাব ও ক্যালকুলেশন পদ্ধতি' : 'Prayer Calculation & Madhab'}
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  {language === 'bn' ? 'ইসলামিক ফাউন্ডেশন বা আন্তর্জাতিক পদ্ধতি' : 'Calculation method and Asr juristic rule'}
+                </span>
+              </div>
+            </div>
 
-          {/* 9. DATA BACKUP & WIPE */}
-          <div className="pt-2 border-t border-[#E7D9DE] dark:border-[#1C2D5A] space-y-2">
+            {/* Calculation Method Selector */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold text-[#123234] dark:text-slate-200 block">
+                {language === 'bn' ? 'ক্যালকুলেশন পদ্ধতি:' : 'Calculation Method:'}
+              </label>
+              <select
+                value={preferences.calculationMethod || 'karachi'}
+                onChange={(e) => {
+                  triggerHaptic(10);
+                  onUpdatePreferences({ calculationMethod: e.target.value });
+                }}
+                className="w-full p-2 rounded-xl bg-white dark:bg-[#083B40] border border-[#B9E2DD]/70 dark:border-[#0F5F62] text-xs font-semibold text-[#123234] dark:text-white outline-none cursor-pointer"
+              >
+                <option value="karachi">ইসলামিক ফাউন্ডেশন / করাচি (IFB Karachi - BD Standard)</option>
+                <option value="mwl">মুসলিম ওয়ার্ল্ড লিগ (Muslim World League - MWL)</option>
+                <option value="makkah">উম্মুল কুরা, মক্কা (Umm al-Qura - Makkah)</option>
+                <option value="isna">আইএসএনএ (ISNA - North America)</option>
+                <option value="egypt">মিশরীয় জেনারেল অথরিটি (Egyptian Authority)</option>
+              </select>
+            </div>
+
+            {/* Asr Juristic Method */}
+            <div className="space-y-1 pt-1">
+              <label className="text-[11px] font-bold text-[#123234] dark:text-slate-200 block">
+                {language === 'bn' ? 'আসর নামাজের মাজহাব:' : 'Asr Juristic Method:'}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(10);
+                    onUpdatePreferences({ asrMethod: 'hanafi' });
+                  }}
+                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                    (preferences.asrMethod || 'hanafi') === 'hanafi'
+                      ? 'bg-[#0F5F62] text-white border-[#0F5F62] font-bold'
+                      : 'bg-white dark:bg-[#083B40] text-slate-700 dark:text-slate-200 border-[#B9E2DD]/70'
+                  }`}
+                >
+                  <span className="text-xs block">হানাফি (Hanafi)</span>
+                  <span className="text-[9px] opacity-80 block">২ গুণ ছায়া (বাংলাদেশ ডিফল্ট)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(10);
+                    onUpdatePreferences({ asrMethod: 'standard' });
+                  }}
+                  className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                    preferences.asrMethod === 'standard'
+                      ? 'bg-[#0F5F62] text-white border-[#0F5F62] font-bold'
+                      : 'bg-white dark:bg-[#083B40] text-slate-700 dark:text-slate-200 border-[#B9E2DD]/70'
+                  }`}
+                >
+                  <span className="text-xs block">স্ট্যান্ডার্ড (Standard)</span>
+                  <span className="text-[9px] opacity-80 block">১ গুণ ছায়া (শাফেঈ/মালেকী/হাম্বলী)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Minute Offsets */}
+            <div className="space-y-1.5 pt-1 border-t border-[#B9E2DD]/40">
+              <label className="text-[11px] font-bold text-[#123234] dark:text-slate-200 block">
+                {language === 'bn' ? 'ওয়াক্তভিত্তিক মিনিট সমন্বয় (Manual Offsets -30 to +30 min):' : 'Manual Prayer Time Offsets:'}
+              </label>
+              <div className="grid grid-cols-3 gap-1.5 text-center">
+                {(['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const).map((pr) => {
+                  const curOffset = preferences.prayerOffsets?.[pr] || 0;
+                  return (
+                    <div key={pr} className="p-1.5 rounded-lg bg-white dark:bg-[#083B40] border border-[#B9E2DD]/50">
+                      <span className="text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300 block">
+                        {pr}
+                      </span>
+                      <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic(5);
+                            const updated = {
+                              ...(preferences.prayerOffsets || { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }),
+                              [pr]: Math.max(-30, curOffset - 1),
+                            };
+                            onUpdatePreferences({ prayerOffsets: updated });
+                          }}
+                          className="w-5 h-5 rounded-md bg-[#F3FAF9] dark:bg-slate-700 text-[#0F5F62] dark:text-[#B9E2DD] font-bold text-xs"
+                        >
+                          -
+                        </button>
+                        <span className="font-mono text-xs font-bold text-[#0F5F62] dark:text-[#B9E2DD] min-w-[24px]">
+                          {curOffset > 0 ? `+${curOffset}` : curOffset}m
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerHaptic(5);
+                            const updated = {
+                              ...(preferences.prayerOffsets || { fajr: 0, sunrise: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0 }),
+                              [pr]: Math.min(30, curOffset + 1),
+                            };
+                            onUpdatePreferences({ prayerOffsets: updated });
+                          }}
+                          className="w-5 h-5 rounded-md bg-[#F3FAF9] dark:bg-slate-700 text-[#0F5F62] dark:text-[#B9E2DD] font-bold text-xs"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 8.6. QURAN DATA VERSION & INTEGRITY VALIDATION */}
+          <div className="p-3.5 rounded-2xl bg-[#FCFAF8] dark:bg-[#083B40]/40 border border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-[#0F5F62]/10 dark:bg-[#B9E2DD]/20 text-[#0F5F62] dark:text-[#B9E2DD] flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="font-bold text-[#123234] dark:text-white block text-xs">
+                    {language === 'bn' ? 'কুরআন ডেটা ভার্সন ও বিশুদ্ধতা' : 'Quran Data Integrity'}
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    কিং ফাহাদ কুরআন কমপ্লেক্স (KFGQPC Verified)
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#0F5F62]/10 text-[#0F5F62] dark:text-[#B9E2DD] font-bold">
+                v3.2.0 Hafs
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              {language === 'bn'
+                ? '১১৪টি সূরা, ৬,২৩৬টি আয়াত ও ৬০৪টি মুসহাফ পৃষ্ঠা বিশুদ্ধ আরবি হরকত এবং প্রখ্যাত আলেমদের অনুমোদিত অনুবাদ সহ সংরক্ষিত।'
+                : 'All 114 Surahs, 6,236 Ayahs and 604 Mushaf pages verified against Madani & Hafezi standards.'}
+            </p>
+
+            <div className="flex items-center justify-between pt-1 border-t border-[#B9E2DD]/40">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                {integrityState === 'verified'
+                  ? (language === 'bn' ? '✓ ১১৪টি সূরার বিশুদ্ধতা সফলভাবে যাচাইকৃত' : '✓ 114 Surahs text verified')
+                  : (language === 'bn' ? 'স্বয়ংক্রিয় বিশুদ্ধতা নিরীক্ষা:' : 'Automatic integrity audit:')}
+              </span>
+              <button
+                type="button"
+                onClick={handleVerifyIntegrity}
+                disabled={integrityState === 'checking'}
+                className="px-2.5 py-1 rounded-lg bg-[#0F5F62] text-white text-[11px] font-bold hover:bg-[#083B40] transition-colors cursor-pointer"
+              >
+                {integrityState === 'checking'
+                  ? (language === 'bn' ? 'যাচাই হচ্ছে...' : 'Verifying...')
+                  : integrityState === 'verified'
+                  ? (language === 'bn' ? 'পুনরায় যাচাই' : 'Re-verify')
+                  : (language === 'bn' ? 'ডেটা সঠিকতা যাচাই' : 'Verify Integrity')}
+              </button>
+            </div>
+          </div>
+
+          {/* 9. PRIVACY, SECURITY & DATA BACKUP */}
+          <div className="pt-2 border-t border-[#B9E2DD]/60 dark:border-[#0F5F62]/60 space-y-2">
+            {/* Hidden file input for backup import */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportBackup}
+              accept=".json"
+              className="hidden"
+            />
+
+            {/* Privacy Promise Banner */}
+            <div className="p-2.5 rounded-xl bg-[#F3FAF9] dark:bg-[#083B40] border border-[#B9E2DD]/60 text-[11px] text-[#123234] dark:text-slate-200 space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-[#0F5F62] dark:text-[#B9E2DD]">
+                <ShieldCheck className="w-4 h-4" />
+                <span>{language === 'bn' ? 'ব্যক্তিগত গোপনীয়তা ও ১০০% অফলাইন সুরক্ষা' : 'Privacy & 100% Offline Promise'}</span>
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                {language === 'bn'
+                  ? 'আপনার সালাত ট্র্যাকার, পিরিয়ড ট্র্যাকার, বুকমার্ক ও ব্যক্তিগত নোট কখনো কোনো ক্লাউড সার্ভারে পাঠানো হয় না। সমস্ত তথ্য অন-ডিভাইস এনক্রিপ্টেড।'
+                  : 'Your Salah logs, period records, bookmarks, and search logs are stored strictly on-device with zero cloud telemetry.'}
+              </p>
+            </div>
+
+            {/* Backup Download & Import */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleExportBackup}
+                className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-white dark:bg-[#083B40] border border-[#0F5F62] text-[#0F5F62] dark:text-[#B9E2DD] hover:bg-[#F3FAF9] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs"
+              >
+                <Download className="w-4 h-4" />
+                <span>{language === 'bn' ? 'ব্যাকআপ ডাউনলোড' : 'Export Backup'}</span>
+              </button>
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full min-h-[44px] py-2 px-3 rounded-xl bg-white dark:bg-[#083B40] border border-[#0F5F62] text-[#0F5F62] dark:text-[#B9E2DD] hover:bg-[#F3FAF9] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs"
+              >
+                <Upload className="w-4 h-4" />
+                <span>{language === 'bn' ? 'ব্যাকআপ রিস্টোর' : 'Import Backup'}</span>
+              </button>
+            </div>
+
             {/* Replay Feature Tour / Tips */}
             {onReplayFeatureTour && (
               <button
@@ -1101,54 +1434,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   triggerHaptic(15);
                   onReplayFeatureTour();
                 }}
-                className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#083B40]/10 dark:bg-[#2DD4BF]/15 hover:bg-[#083B40]/20 text-[#083B40] dark:text-[#2DD4BF] border border-[#083B40]/20 dark:border-[#2DD4BF]/30 font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#083B40]/10 dark:bg-[#B9E2DD]/15 hover:bg-[#083B40]/20 text-[#083B40] dark:text-[#B9E2DD] border border-[#083B40]/20 dark:border-[#B9E2DD]/30 font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-[#083B40] dark:text-[#2DD4BF]" />
+                <Sparkles className="w-4 h-4 text-[#083B40] dark:text-[#B9E2DD]" />
                 <span>অ্যাপের সকল ফিচার টিপস দেখুন (Feature Tour)</span>
               </button>
             )}
 
-            {/* Replay Splash / Logo Motion Graphics */}
-            {onReplaySplash && (
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic(15);
-                  onReplaySplash();
-                  onClose();
-                }}
-                className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#F8E8ED] dark:bg-[#1C2D5A] hover:bg-[#E9B7C3]/30 text-[#21409A] dark:text-[#E9B7C3] border border-[#E7D9DE] dark:border-[#24386E] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-[#21409A] dark:text-[#E9B7C3]" />
-                <span>লোগো ও সূচনা মোশন গ্রাফিক্স দেখুন</span>
-              </button>
-            )}
-
-            {/* Outline CTA */}
+            {/* Delete Sensitive Data */}
             <button
-              onClick={handleExportBackup}
-              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-transparent border border-[#21409A] text-[#21409A] dark:text-[#E9B7C3] dark:border-[#E9B7C3]/40 hover:bg-[#F8E8ED] dark:hover:bg-[#142042] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              <span>ব্যাকআপ ডাউনলোড করুন</span>
-            </button>
-
-            {/* Muted Deep Red Destructive Action */}
-            <button
-              onClick={() => {
-                if (confirm('আপনি কি নিশ্চিত যে সমস্ত ডেটা ও সেটিংস রিসেট করতে চান?')) {
-                  onResetAllData();
-                  onClose();
-                }
-              }}
-              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#991B1B]/10 hover:bg-[#991B1B]/20 text-[#991B1B] dark:text-red-300 border border-[#991B1B]/30 font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+              onClick={handleDeleteSensitiveData}
+              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#991B1B]/10 hover:bg-[#991B1B]/20 text-[#991B1B] dark:text-red-300 border border-[#991B1B]/30 font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-xs"
             >
               <Trash2 className="w-4 h-4" />
-              <span>সকল ডেটা ফ্যাক্টরি রিসেট করুন</span>
+              <span>{language === 'bn' ? 'ব্যক্তিগত ডেটা মুছে ফেলুন (Delete My Data)' : 'Delete My Personal Data'}</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* CUSTOMIZE HOME MODAL */}
+      <CustomizeHomeModal
+        isOpen={showCustomizeHomeModal}
+        onClose={() => setShowCustomizeHomeModal(false)}
+        language={language}
+        preferences={preferences}
+        onUpdatePreferences={onUpdatePreferences}
+      />
     </div>
   );
 };

@@ -234,16 +234,42 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
   const sessionCount = tasbeehCounts[currentPreset.id] || 0;
   const lifetimeCount = tasbeehLifetimeCounts[currentPreset.id] || 0;
 
-  // Handle single tap on the interactive circular dial
-  const handleTap = () => {
+  // Visual tap feedback states for luxury tactile feel
+  const [isTapped, setIsTapped] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
+
+  // Handle single tap on the interactive circular dial with fingertip ripple
+  const handleTap = (e?: React.MouseEvent<HTMLButtonElement> | React.TouchEvent<HTMLButtonElement>) => {
+    setIsTapped(true);
+    setTimeout(() => setIsTapped(false), 140);
+
+    // Calculate click coordinates for dynamic ripple originating from exact touch point
+    if (e && 'currentTarget' in e && e.currentTarget) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const clientX = 'clientX' in e && e.clientX ? e.clientX : (e as any).touches?.[0]?.clientX ?? (rect.left + rect.width / 2);
+      const clientY = 'clientY' in e && e.clientY ? e.clientY : (e as any).touches?.[0]?.clientY ?? (rect.top + rect.height / 2);
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+      const newRip = { id: Date.now() + Math.random(), x, y };
+      setRipples((prev) => [...prev.slice(-3), newRip]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== newRip.id));
+      }, 500);
+    }
+
     const nextSessionCount = sessionCount + 1;
     // Increments session count AND adds 1 to permanent lifetime record
     onUpdateCount(currentPreset.id, nextSessionCount, 1);
 
-    if (vibrationEnabled) {
-      if (nextSessionCount % selectedTarget === 0) {
-        triggerHaptic(70);
-      } else {
+    if (nextSessionCount % selectedTarget === 0) {
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 2000);
+      if (vibrationEnabled) {
+        triggerHaptic(80);
+      }
+    } else {
+      if (vibrationEnabled) {
         triggerHaptic(20);
       }
     }
@@ -670,127 +696,247 @@ export const TasbeehCounter: React.FC<TasbeehCounterProps> = ({
           </div>
 
           {/* =========================================================================
-              MASSIVE ATTRACTIVE CIRCULAR COUNTER (ERGONOMIC, SMOOTH BEAD NOTCHES, SOOTHING)
+              LUXURY ISLAMIC DIGITAL TASBEEH DIAL (PROFESSIONAL TACTILE OLED TIMEPIECE)
               ========================================================================= */}
-          <div className="flex flex-col items-center justify-center py-1 select-none">
-            <div className="relative w-64 h-64 sm:w-68 sm:h-68 flex items-center justify-center">
-              {/* Outer SVG Circular Progress Ring with 33 prayer bead markers */}
-              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 260 260">
-                {/* Background Track Circle */}
+          <div className="flex flex-col items-center justify-center py-2 select-none">
+            <div className="relative w-64 h-64 xs:w-72 xs:h-72 sm:w-76 sm:h-76 max-w-[84vw] max-h-[84vw] flex items-center justify-center">
+              {/* Outer Ambient Glow Aura */}
+              <div className="absolute inset-0 rounded-full bg-radial from-teal-500/15 via-teal-500/5 to-transparent blur-xl pointer-events-none" />
+
+              {/* Outer SVG Circular Progress Track & 33 Illuminated Beads */}
+              <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 280 280">
+                <defs>
+                  {/* Glowing Teal/Emerald Metallic Gradient for Progress Arc */}
+                  <linearGradient id="tasbeehLuxuryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#0F766E" />
+                    <stop offset="35%" stopColor="#0D9488" />
+                    <stop offset="70%" stopColor="#14B8A6" />
+                    <stop offset="100%" stopColor="#2DD4BF" />
+                  </linearGradient>
+
+                  {/* Golden Milestone Gradient */}
+                  <linearGradient id="goldMilestoneGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#D97706" />
+                    <stop offset="50%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#FDE68A" />
+                  </linearGradient>
+
+                  {/* Soft Glow Filter for Progress and Active Beads */}
+                  <filter id="beadGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Outer Decorative Metallic Rim Ring */}
                 <circle
-                  cx="130"
-                  cy="130"
-                  r="114"
+                  cx="140"
+                  cy="140"
+                  r="134"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="7"
-                  className="text-slate-200 dark:text-slate-800"
+                  strokeWidth="1.5"
+                  className="text-slate-300/40 dark:text-slate-800"
+                />
+
+                {/* Background Track Circle with Inner Bevel */}
+                <circle
+                  cx="140"
+                  cy="140"
+                  r="124"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  className="text-slate-200/90 dark:text-[#0C1527]"
                 />
 
                 {/* Animated Progress Gradient Arc */}
                 <circle
-                  cx="130"
-                  cy="130"
-                  r="114"
+                  cx="140"
+                  cy="140"
+                  r="124"
                   fill="none"
-                  stroke="url(#tasbeehGradient)"
-                  strokeWidth="7"
-                  strokeDasharray={2 * Math.PI * 114}
-                  strokeDashoffset={2 * Math.PI * 114 * (1 - progressPercent / 100)}
+                  stroke={showCelebration ? 'url(#goldMilestoneGradient)' : 'url(#tasbeehLuxuryGradient)'}
+                  strokeWidth="8"
+                  strokeDasharray={2 * Math.PI * 124}
+                  strokeDashoffset={2 * Math.PI * 124 * (1 - progressPercent / 100)}
                   strokeLinecap="round"
+                  filter="url(#beadGlow)"
                   className="transition-all duration-200 ease-out"
                 />
 
-                {/* Bead Notch Dots around perimeter (33 beads like traditional Tasbeeh) */}
+                {/* 33 Prayer Beads around the perimeter (Traditional Islamic Misbaha Beads) */}
                 {Array.from({ length: 33 }).map((_, i) => {
                   const angle = (i * 360) / 33;
                   const rad = (angle * Math.PI) / 180;
-                  const x = 130 + 114 * Math.cos(rad);
-                  const y = 130 + 114 * Math.sin(rad);
+                  const x = 140 + 124 * Math.cos(rad);
+                  const y = 140 + 124 * Math.sin(rad);
                   const isCompletedBead = (sessionCount % 33) > i;
+                  const isCurrentBead = (sessionCount % 33) === i;
+                  const isLandmarkBead = i === 0 || i === 11 || i === 22; // 11-bead dividers
+
                   return (
-                    <circle
-                      key={i}
-                      cx={x}
-                      cy={y}
-                      r={i % 11 === 0 ? 3.5 : 2}
-                      className={
-                        isCompletedBead
-                          ? 'fill-teal-600 dark:fill-teal-400'
-                          : 'fill-slate-300 dark:fill-slate-700/80'
-                      }
-                    />
+                    <g key={i}>
+                      {/* Landmark divider outer halo */}
+                      {isLandmarkBead && (
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r={isCompletedBead ? 6 : 5}
+                          fill="none"
+                          stroke={isCompletedBead ? '#F59E0B' : 'currentColor'}
+                          strokeWidth="1"
+                          className={isCompletedBead ? 'text-amber-400' : 'text-slate-400 dark:text-slate-700'}
+                        />
+                      )}
+
+                      {/* Main Bead Body with Multi-Depth Color */}
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={isLandmarkBead ? 4 : isCurrentBead ? 3.8 : 2.5}
+                        filter={isCompletedBead ? 'url(#beadGlow)' : undefined}
+                        className={
+                          isCompletedBead
+                            ? isLandmarkBead
+                              ? 'fill-amber-400'
+                              : 'fill-teal-400'
+                            : isCurrentBead
+                            ? 'fill-white animate-pulse'
+                            : 'fill-slate-300 dark:fill-[#1C2C47]'
+                        }
+                      />
+
+                      {/* Specular White Highlight on Completed Beads */}
+                      {isCompletedBead && (
+                        <circle
+                          cx={x - 0.8}
+                          cy={y - 0.8}
+                          r="1"
+                          fill="#FFFFFF"
+                          opacity="0.85"
+                        />
+                      )}
+                    </g>
                   );
                 })}
-
-                <defs>
-                  <linearGradient id="tasbeehGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#0F766E" />
-                    <stop offset="50%" stopColor="#0D9488" />
-                    <stop offset="100%" stopColor="#2DD4BF" />
-                  </linearGradient>
-                </defs>
               </svg>
 
-              {/* Main Interactive Dial Button */}
+              {/* Main Interactive Dial Button (The Luxury Sapphire Glass & OLED Chanting Surface) */}
               <motion.button
                 type="button"
                 onClick={handleTap}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.94 }}
-                transition={{ duration: 0.12, ease: 'easeOut' }}
-                className="relative w-52 h-52 sm:w-54 sm:h-54 rounded-full bg-linear-to-b from-[#15233E] via-[#0E1A30] to-[#091122] text-white shadow-xl flex flex-col items-center justify-center border-4 border-slate-700/50 dark:border-slate-700/70 select-none group cursor-pointer focus:outline-hidden"
+                whileHover={{ scale: 1.015 }}
+                whileTap={{ scale: 0.91, y: 3.5 }}
+                transition={{ type: 'spring', stiffness: 550, damping: 20 }}
+                className="relative w-56 h-56 sm:w-60 sm:h-60 rounded-full bg-radial from-[#1A3845] via-[#0E2028] to-[#050C10] text-white shadow-2xl flex flex-col items-center justify-center select-none group cursor-pointer focus:outline-hidden overflow-hidden border-[5px] border-slate-700/80 dark:border-slate-800"
                 style={{
-                  boxShadow: 'inset 0 2px 10px rgba(255,255,255,0.12), 0 10px 28px rgba(15,23,42,0.28)',
+                  boxShadow:
+                    '0 12px 36px -4px rgba(0, 0, 0, 0.5), inset 0 2px 14px rgba(255, 255, 255, 0.2), inset 0 -4px 14px rgba(0, 0, 0, 0.7)',
                 }}
               >
-                {/* Concentric inner highlight rim */}
-                <div className="absolute inset-1.5 rounded-full border border-white/10 pointer-events-none" />
+                {/* 1. Concentric Inner Gold / Emerald Trim Rings */}
+                <div className="absolute inset-1.5 rounded-full border border-amber-400/20 dark:border-teal-400/25 pointer-events-none" />
+                <div className="absolute inset-3 rounded-full border border-white/5 pointer-events-none" />
 
-                {/* Pulse ring animation on cycle or milestone reach */}
-                {sessionCount > 0 && sessionCount % selectedTarget === 0 && (
+                {/* 2. Convex Sapphire Watch-Glass Reflection Layer */}
+                <div className="absolute top-0 inset-x-0 h-[48%] rounded-t-full bg-linear-to-b from-white/20 via-white/5 to-transparent pointer-events-none" />
+
+                {/* 3. Subtle Islamic 8-Point Star Geometry Watermark in Background */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-8 pointer-events-none">
+                  <svg className="w-36 h-36 text-teal-300" viewBox="0 0 100 100" fill="currentColor">
+                    <polygon points="50,0 64,36 100,50 64,64 50,100 36,64 0,50 36,36" />
+                    <polygon points="50,7 61,39 93,50 61,61 50,93 39,61 7,50 39,39" fill="none" stroke="currentColor" strokeWidth="2" />
+                  </svg>
+                </div>
+
+                {/* 4. Dynamic Fingertip Expanding Ripples on Tap */}
+                <AnimatePresence>
+                  {ripples.map((rip) => (
+                    <motion.span
+                      key={rip.id}
+                      initial={{ width: 0, height: 0, opacity: 0.75, x: rip.x, y: rip.y }}
+                      animate={{ width: 340, height: 340, opacity: 0, x: rip.x - 170, y: rip.y - 170 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.48, ease: 'easeOut' }}
+                      className="absolute rounded-full bg-radial from-teal-300/40 via-teal-400/15 to-transparent pointer-events-none z-0"
+                    />
+                  ))}
+                </AnimatePresence>
+
+                {/* 4.5 Tactile Edge Ripple when tapped */}
+                {isTapped && (
                   <motion.div
-                    initial={{ scale: 1, opacity: 0.9 }}
+                    initial={{ scale: 0.8, opacity: 0.7 }}
                     animate={{ scale: 1.25, opacity: 0 }}
-                    transition={{ duration: 0.9, repeat: Infinity }}
-                    className="absolute inset-0 rounded-full border-2 border-teal-400 pointer-events-none"
+                    transition={{ duration: 0.35, ease: 'easeOut' }}
+                    className="absolute inset-0 rounded-full border-2 border-teal-300 pointer-events-none"
                   />
                 )}
 
-                {/* Cycle indicator / Minimal Jikir Path tag */}
-                <span className="text-[11px] text-teal-300 font-bold uppercase tracking-wider">
-                  {cycleCount > 0
-                    ? language === 'bn'
-                      ? `${toBnNumber(cycleCount)}ম চক্র সমাপ্ত`
-                      : `Cycle ${cycleCount} Done`
-                    : language === 'bn'
-                    ? 'জিকির পাঠ'
-                    : 'Recitation'}
-                </span>
+                {/* 5. Celebratory Ring on Target Completion */}
+                {showCelebration && (
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 1 }}
+                    animate={{ scale: 1.3, opacity: 0 }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className="absolute inset-0 rounded-full border-3 border-amber-400 pointer-events-none shadow-[0_0_20px_rgba(245,158,11,0.6)]"
+                  />
+                )}
 
-                {/* Main Large Digits */}
-                <motion.span
-                  key={sessionCount}
-                  initial={{ scale: 0.92, opacity: 0.8 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ duration: 0.1 }}
-                  className="text-5xl sm:text-6xl font-black font-mono tabular-nums tracking-tighter drop-shadow-sm text-white my-0.5"
-                >
-                  {formatDhikrNumber(sessionCount, language)}
-                </motion.span>
+                {/* TOP: Cycle Badge with Glowing Status Indicator */}
+                <div className="relative z-10 mb-0.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/10 dark:bg-emerald-950/60 border border-white/15 dark:border-emerald-500/30 text-[10.5px] font-bold text-teal-300 tracking-wider backdrop-blur-xs">
+                    <span className={`w-1.5 h-1.5 rounded-full ${showCelebration ? 'bg-amber-400 animate-ping' : 'bg-teal-400 animate-pulse'}`} />
+                    <span>
+                      {cycleCount > 0
+                        ? language === 'bn'
+                          ? `${toBnNumber(cycleCount)}ম চক্র সমাপ্ত`
+                          : `Cycle ${cycleCount} Done`
+                        : language === 'bn'
+                        ? 'জিকির পাঠ'
+                        : 'Recitation'}
+                    </span>
+                  </span>
+                </div>
 
-                {/* Subtitle Target & Touch prompt */}
-                <div className="flex items-center gap-1 text-[11px] text-slate-300/80 font-mono">
+                {/* CENTER: Grand High-Contrast OLED Digital Counter Digits */}
+                <div className="relative z-10 my-0.5 flex flex-col items-center">
+                  <motion.span
+                    key={sessionCount}
+                    initial={{ scale: 0.88, opacity: 0.8 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.1 }}
+                    className="text-5xl sm:text-6xl font-black font-mono tabular-nums tracking-tighter text-white drop-shadow-[0_0_18px_rgba(45,212,191,0.6)] select-none"
+                  >
+                    {formatDhikrNumber(sessionCount, language)}
+                  </motion.span>
+                </div>
+
+                {/* SUBTITLE: Target & Remaining Progress */}
+                <div className="relative z-10 flex items-center gap-1 text-[11px] text-slate-300/80 font-mono tracking-wide">
                   <span>
                     {language === 'bn'
                       ? `টার্গেট: ${toBnNumber(selectedTarget)}`
                       : `Target: ${selectedTarget}`}
                   </span>
+                  {selectedTarget > 0 && (
+                    <span className="text-teal-400/90 font-medium">
+                      · {language === 'bn'
+                        ? `বাকি: ${toBnNumber(Math.max(0, selectedTarget - (sessionCount % selectedTarget || (sessionCount > 0 && sessionCount % selectedTarget === 0 ? 0 : selectedTarget))))}`
+                        : `${Math.max(0, selectedTarget - (sessionCount % selectedTarget || (sessionCount > 0 && sessionCount % selectedTarget === 0 ? 0 : selectedTarget)))} left`}
+                    </span>
+                  )}
                 </div>
 
-                {/* Touch invitation capsule */}
-                <div className="mt-1.5 px-3 py-0.5 rounded-full bg-white/10 hover:bg-white/15 text-[10px] text-slate-200 font-medium tracking-wide border border-white/15 backdrop-blur-xs">
-                  {language === 'bn' ? 'ট্যাপ করুন' : 'Tap to Count'}
+                {/* BOTTOM: Luxury Tactile Touch Pill Button */}
+                <div className="relative z-10 mt-2 px-3.5 py-1 rounded-full bg-linear-to-r from-teal-500/20 via-white/15 to-teal-500/20 hover:from-teal-500/30 hover:to-teal-500/30 text-[10px] text-teal-200 font-bold tracking-wider border border-teal-400/30 backdrop-blur-xs flex items-center gap-1 shadow-xs transition-colors">
+                  <span className="text-[9px] text-amber-300">✦</span>
+                  <span>{language === 'bn' ? 'আলতো স্পর্শ করুন' : 'TAP TO CHANT'}</span>
+                  <span className="text-[9px] text-amber-300">✦</span>
                 </div>
               </motion.button>
             </div>

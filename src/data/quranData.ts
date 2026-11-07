@@ -263,98 +263,6 @@ export const CURATED_SURAH_DATA: Record<number, AyahItem[]> = {
       "page": 1
     }
   ],
-  "2": [
-    {
-      "numberInSurah": 1,
-      "numberInQuran": 8,
-      "textArabic": "الٓمٓ",
-      "textArabicTajweed": "الٓمٓ",
-      "transliterationBn": "আলিফ-লাম-মীম",
-      "translationBn": "আলিফ-লাম-মীম।",
-      "translationEn": "Alif, Lam, Meem.",
-      "juz": 1,
-      "page": 2
-    },
-    {
-      "numberInSurah": 2,
-      "numberInQuran": 9,
-      "textArabic": "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
-      "textArabicTajweed": "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
-      "transliterationBn": "যালিকাল কিতাবু লা রাইবা ফীহ, হুদাল লিলমুত্তাক্বীন",
-      "translationBn": "এটি সেই কিতাব যাতে কোনো সন্দেহ নেই, মুত্তাকীদের জন্য পথপ্রদর্শক।",
-      "translationEn": "This is the Book about which there is no doubt, a guidance for those conscious of Allah -",
-      "juz": 1,
-      "page": 2
-    },
-    {
-      "numberInSurah": 3,
-      "numberInQuran": 10,
-      "textArabic": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
-      "textArabicTajweed": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
-      "transliterationBn": "আল্লাযীনা ইউ'মিনূনা বিলগাইবি ওয়া ইউক্বীমূনা সালাতা ওয়া মিম্মা রাযাক্বনাহুম ইউনফিক্বূন",
-      "translationBn": "যারা অদৃশ্যে বিশ্বাস করে, সালাত কায়েম করে এবং আমি তাদের যে রিযিক দান করেছি তা থেকে ব্যয় করে।",
-      "translationEn": "Who believe in the unseen, establish prayer, and spend out of what We have provided for them,",
-      "juz": 1,
-      "page": 2
-    },
-    {
-      "numberInSurah": 4,
-      "numberInQuran": 11,
-      "textArabic": "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ",
-      "textArabicTajweed": "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ",
-      "transliterationBn": "ওয়াল্লাযীনা ইউ'মিনূনা বিমা উনযিলা ইলাইকা ওয়ামা উনযিলা মিন ক্বাবলিক, ওয়াবিল আখিরাতি হুম ইয়ূক্বিনূন",
-      "translationBn": "এবং যারা বিশ্বাস স্থাপন করে যা আপনার প্রতি নাযিল করা হয়েছে এবং যা আপনার পূর্বে নাযিল করা হয়েছিল, আর আখেরাতে তারা দৃঢ় বিশ্বাস রাখে।",
-      "translationEn": "And who believe in what has been revealed to you, [O Muhammad], and what was revealed before you, and of the Hereafter they are certain [in faith].",
-      "juz": 1,
-      "page": 2
-    },
-    {
-      "numberInSurah": 5,
-      "numberInQuran": 12,
-      "textArabic": "أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
-      "textArabicTajweed": "أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
-      "transliterationBn": "উলাইকা ‘আলা হুদাম মির রাব্বিহিম ওয়া উলাইকা হুমুল মুফলিহূন",
-      "translationBn": "তারাই তাদের প্রতিপালকের পক্ষ থেকে সঠিক পথের ওপর রয়েছে এবং তারাই সফলকাম।",
-      "translationEn": "Those are upon [right] guidance from their Lord, and it is those who are the successful.",
-      "juz": 1,
-      "page": 2
-    }
-  ],
-  "67": [
-    {
-      "numberInSurah": 1,
-      "numberInQuran": 5242,
-      "textArabic": "تَبَٰرَكَ ٱلَّذِى بِيَدِهِ ٱلْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَىْءٍۢ قَدِيرٌ",
-      "textArabicTajweed": "تَبَٰرَكَ ٱلَّذِى بِيَدِهِ ٱلْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَىْءٍۢ قَدِيرٌ",
-      "transliterationBn": "তাবারাকাল্লাযী বিয়াদিহিল মুলকু ওয়াহুওয়া আলা কুল্লি শাইয়িন ক্বাদীর",
-      "translationBn": "বরকতময় তিনি যাঁর হাতে সমগ্র রাজত্ব, এবং তিনি সকল বিষয়ের ওপর সর্বশক্তিমান।",
-      "translationEn": "Blessed is He in whose hand is dominion, and He is over all things competent -",
-      "juz": 29,
-      "page": 562
-    },
-    {
-      "numberInSurah": 2,
-      "numberInQuran": 5243,
-      "textArabic": "ٱلَّذِى خَلَقَ ٱلْمَوْتَ وَٱلْحَيَوٰةَ لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًۭا ۚ وَهُوَ ٱلْعَزِيزُ ٱلْغَفُورُ",
-      "textArabicTajweed": "ٱلَّذِى خَلَقَ ٱلْ<span class=\"tajweed-ghunnah\">مَ</span>وْتَ وَٱلْحَيَوٰةَ لِيَ<span class=\"tajweed-qalqalah\">بْ</span>لُوَكُمْ أَيُّكُمْ أَحْسَنُ عَ<span class=\"tajweed-ghunnah\">مَ</span>لًۭا ۚ وَهُوَ ٱلْعَزِيزُ ٱلْغَفُورُ",
-      "transliterationBn": "আল্লাযী খালাক্বাল মাওতা ওয়াল হায়াতা লিইয়াবলুয়াকুম আইয়্যুকুম আহসানু আমালা, ওয়াহুয়াল আযীযুল গাফূর",
-      "translationBn": "যিনি সৃষ্টি করেছেন মৃত্যু ও জীবন, তোমাদের পরীক্ষা করার জন্য যে তোমাদের মধ্যে কর্মে কে শ্রেষ্ঠ। আর তিনি পরাক্রমশালী, ক্ষমাশীল।",
-      "translationEn": "[He] who created death and life to test you [as to] which of you is best in deed - and He is the Exalted in Might, the Forgiving -",
-      "juz": 29,
-      "page": 562
-    },
-    {
-      "numberInSurah": 3,
-      "numberInQuran": 5244,
-      "textArabic": "ٱلَّذِى خَلَقَ سَبْعَ سَمَٰوَٰتٍۢ طِبَاقًۭا ۖ مَّا تَرَىٰ فِى خَلْقِ ٱلرَّحْمَٰنِ مِن تَفَٰوُتٍۢ ۖ فَٱرْجِعِ ٱلْبَصَرَ هَلْ تَرَىٰ مِن فُطُورٍۢ",
-      "textArabicTajweed": "ٱلَّذِى خَلَقَ سَ<span class=\"tajweed-qalqalah\">بْ</span>عَ سَ<span class=\"tajweed-ghunnah\">مَ</span>ٰوَٰتٍۢ طِبَاقًۭا ۖ <span class=\"tajweed-ghunnah\">مّ</span>َا تَرَىٰ فِى خَلْقِ ٱلرَّحْ<span class=\"tajweed-ghunnah\">مَ</span>ٰنِ مِن تَفَٰوُتٍۢ ۖ فَٱرْجِعِ ٱلْبَصَرَ هَلْ تَرَىٰ مِن فُطُورٍۢ",
-      "transliterationBn": "আল্লাযী খালাক্বা সাবআ সামাওয়া-তিন তিবা-ক্বা, মা তারা ফী খালক্বির রাহমা-নি মিন তাফা-উত",
-      "translationBn": "যিনি সপ্ত আকাশ স্তরে স্তরে সৃষ্টি করেছেন। পরম করুণাময়ের সৃষ্টিতে আপনি কোনো অসামঞ্জস্য দেখতে পাবেন না।",
-      "translationEn": "[And] who created seven heavens in layers. You do not see in the creation of the Most Merciful any inconsistency.",
-      "juz": 29,
-      "page": 562
-    }
-  ],
   "94": [
     {
       "numberInSurah": 1,
@@ -1222,288 +1130,190 @@ export function stripBismillahFromTranslation(text: string, lang: 'bn' | 'en'): 
     .trim();
 }
 
+export const PAGE_2_AL_BAQARAH_OFFLINE: AyahItem[] = [
+  {
+    numberInSurah: 1,
+    numberInQuran: 8,
+    textArabic: "الٓمٓ",
+    textArabicTajweed: "الٓمٓ",
+    transliterationBn: "আলিফ-লাম-মীম",
+    translationBn: "আলিফ-লাম-মীম।",
+    translationEn: "Alif, Lam, Meem.",
+    juz: 1,
+    page: 2,
+  },
+  {
+    numberInSurah: 2,
+    numberInQuran: 9,
+    textArabic: "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
+    textArabicTajweed: "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ",
+    transliterationBn: "যালিকাল কিতাবু লা রাইবা ফীহ, হুদাল লিলমুত্তাক্বীন",
+    translationBn: "এটি সেই কিতাব যাতে কোনো সন্দেহ নেই, মুত্তাকীদের জন্য পথপ্রদর্শক।",
+    translationEn: "This is the Book about which there is no doubt, a guidance for those conscious of Allah -",
+    juz: 1,
+    page: 2,
+  },
+  {
+    numberInSurah: 3,
+    numberInQuran: 10,
+    textArabic: "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
+    textArabicTajweed: "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
+    transliterationBn: "আল্লাযীনা ইউ'মিনূনা বিলগাইবি ওয়া ইউক্বীমূনা সালাতা ওয়া মিম্মা রাযাক্বনাহুম ইউনফিক্বূন",
+    translationBn: "যারা অদৃশ্যে বিশ্বাস করে, সালাত কায়েম করে এবং আমি তাদের যে রিযিক দান করেছি তা থেকে ব্যয় করে।",
+    translationEn: "Who believe in the unseen, establish prayer, and spend out of what We have provided for them,",
+    juz: 1,
+    page: 2,
+  },
+  {
+    numberInSurah: 4,
+    numberInQuran: 11,
+    textArabic: "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ",
+    textArabicTajweed: "وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ",
+    transliterationBn: "ওয়াল্লাযীনা ইউ'মিনূনা বিমা উনযিলা ইলাইকা ওয়ামা উনযিলা মিন ক্বাবলিক, ওয়াবিল আখিরাতি হুম ইয়ূক্বিনূন",
+    translationBn: "এবং যারা বিশ্বাস স্থাপন করে যা আপনার প্রতি নাযিল করা হয়েছে এবং যা আপনার পূর্বে নাযিল করা হয়েছিল, আর আখেরাতে তারা দৃঢ় বিশ্বাস রাখে।",
+    translationEn: "And who believe in what has been revealed to you, [O Muhammad], and what was revealed before you, and of the Hereafter they are certain [in faith].",
+    juz: 1,
+    page: 2,
+  },
+  {
+    numberInSurah: 5,
+    numberInQuran: 12,
+    textArabic: "أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
+    textArabicTajweed: "أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ",
+    transliterationBn: "উলাইকা ‘আলা হুদাম মির রাব্বিহিম ওয়া উলাইকা হুমুল মুফলিহূন",
+    translationBn: "তারাই তাদের প্রতিপালকের পক্ষ থেকে সঠিক পথের ওপর রয়েছে এবং তারাই সফলকাম।",
+    translationEn: "Those are upon [right] guidance from their Lord, and it is those who are the successful.",
+    juz: 1,
+    page: 2,
+  },
+];
+
 // Asynchronous loader for fetching any of the 114 Surahs from open Quran API with caching
 const SURAH_CACHE = new Map<number, AyahItem[]>();
 
 export async function fetchSurahAyahs(surahNumber: number): Promise<AyahItem[]> {
-  // If in curated offline dataset, return immediately
-  if (CURATED_SURAH_DATA[surahNumber]) {
-    return CURATED_SURAH_DATA[surahNumber];
+  const meta = SURAH_LIST.find((s) => s.number === surahNumber);
+  const targetCount = meta?.numberOfAyahs || 0;
+
+  // 1. If in curated offline dataset, verify it contains 100% of the surah's ayahs
+  const curated = CURATED_SURAH_DATA[surahNumber];
+  if (curated && targetCount > 0 && curated.length === targetCount) {
+    return curated;
   }
 
-  // If in memory cache, return
+  // 2. If in memory cache, verify completeness
   if (SURAH_CACHE.has(surahNumber)) {
-    return SURAH_CACHE.get(surahNumber)!;
+    const cached = SURAH_CACHE.get(surahNumber)!;
+    if (targetCount > 0 && cached.length === targetCount) {
+      return cached;
+    }
   }
 
-  // Check persistent offline cache in localStorage (v8 cache key to ensure cleanly stripped Bismillah & normalized Harakats)
+  // 3. Check persistent offline cache in localStorage (v10 cache key)
+  const cacheKey = `noor_quran_surah_cache_v10_${surahNumber}`;
   if (typeof window !== 'undefined') {
     try {
-      const stored = localStorage.getItem(`noor_quran_surah_cache_v8_${surahNumber}`);
+      const stored = localStorage.getItem(cacheKey);
       if (stored) {
         const parsed = JSON.parse(stored) as AyahItem[];
-        SURAH_CACHE.set(surahNumber, parsed);
-        return parsed;
+        if (targetCount > 0 && parsed && parsed.length === targetCount) {
+          SURAH_CACHE.set(surahNumber, parsed);
+          return parsed;
+        } else {
+          localStorage.removeItem(cacheKey);
+        }
       }
     } catch {
-      // ignore
+      // ignore storage access error
     }
   }
 
   try {
     // Fetch authentic Madinah Mushaf Arabic text with COMPLETE Tashkeel & Harakat (quran-uthmani),
-    // English transliteration (en.transliteration), Bengali translation (bn.bengali) and English translation (en.sahih)
-    const resp = await fetch(
-      `https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,en.transliteration,bn.bengali,en.sahih`
+    // Bengali translation (bn.bengali) and English translation (en.sahih)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    let resp = await fetch(
+      `https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,bn.bengali,en.sahih`,
+      { signal: controller.signal }
     );
+    clearTimeout(timeoutId);
+
+    // Fallback to lighter edition without English if timeout/error
+    if (!resp.ok) {
+      resp = await fetch(
+        `https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,bn.bengali`
+      );
+    }
+
     if (!resp.ok) throw new Error('Failed to fetch surah data');
     const json = await resp.json();
-    
-    if (json.data && Array.isArray(json.data) && json.data.length >= 3) {
+
+    if (json.data && Array.isArray(json.data) && json.data.length >= 2) {
       const arabicAyahs = json.data[0].ayahs;
-      const transliterationAyahs = json.data[1].ayahs;
-      const bengaliAyahs = json.data[2].ayahs;
-      const englishAyahs = json.data[3]?.ayahs || [];
+      const bengaliAyahs = json.data[1].ayahs;
+      const englishAyahs = json.data[2]?.ayahs || [];
 
-      const items: AyahItem[] = arabicAyahs.map((ar: { numberInSurah: number; number: number; text: string; juz: number; page: number; sajdah: boolean }, idx: number) => {
-        let textAr = normalizeQuranArabic(ar.text);
-        let rawTransliteration = transliterationAyahs[idx]?.text || '';
-        let bnTranslation = bengaliAyahs[idx]?.text || '';
-        let enTranslation = englishAyahs[idx]?.text || '';
+      const items: AyahItem[] = arabicAyahs.map(
+        (ar: { numberInSurah: number; number: number; text: string; juz: number; page: number; sajdah: boolean }, idx: number) => {
+          let textAr = normalizeQuranArabic(ar.text);
+          let bnTranslation = bengaliAyahs[idx]?.text || '';
+          let enTranslation = englishAyahs[idx]?.text || '';
 
-        // For Surahs 2-114, strip repeated Bismillah prefix from Ayah 1 (as Bismillah header is already shown above)
-        if (surahNumber !== 1 && (idx === 0 || /^[\s\uFEFF]*بِ?سْ?مِ?/u.test(textAr))) {
-          textAr = stripBismillahPrefix(textAr);
-          rawTransliteration = rawTransliteration
-            .replace(/^Bismillaahir[ -]Rahmaanir[ -]Raheem\s*/i, '')
-            .replace(/^Bismil-laahir[ -]Rahmaanir[ -]Raheem\s*/i, '')
-            .replace(/^In the name of Allah[,\.]?\s*/i, '')
-            .trim();
-          bnTranslation = stripBismillahFromTranslation(bnTranslation, 'bn');
-          enTranslation = stripBismillahFromTranslation(enTranslation, 'en');
+          // For Surahs 2-114, strip repeated Bismillah prefix from Ayah 1 (as Bismillah header is already shown above)
+          // For Surah 1 (Al-Fatihah), Bismillah IS Ayah 1 and MUST be preserved!
+          if (surahNumber !== 1 && (idx === 0 || /^[\s\uFEFF]*بِ?سْ?مِ?/u.test(textAr))) {
+            textAr = stripBismillahPrefix(textAr);
+            bnTranslation = stripBismillahFromTranslation(bnTranslation, 'bn');
+            enTranslation = stripBismillahFromTranslation(enTranslation, 'en');
+          }
+
+          // Generate authentic pronunciation with full vocalization
+          const bnPronunciation = getBengaliPronunciation(
+            surahNumber,
+            ar.numberInSurah,
+            textAr,
+            ''
+          );
+
+          // Precise automatic Tajweed markup parser:
+          const tajweedAr = textAr
+            .replace(/(إِنَّ|أَنَّ|ثُمَّ|عَمَّ|مِّن|مَّآ|[نم][َّّ])/g, '<span class="tajweed-ghunnah">$1</span>')
+            .replace(/([قطبجد][ْۡ])/g, '<span class="tajweed-qalqalah">$1</span>')
+            .replace(/([ء-يٱ-ۓ][\u064B-\u065F\u0670]?[\u0653\u06E4]|آ|ۤ)/g, '<span class="tajweed-madd">$1</span>');
+
+          return {
+            numberInSurah: ar.numberInSurah,
+            numberInQuran: ar.number,
+            textArabic: textAr,
+            textArabicTajweed: tajweedAr,
+            transliterationBn: bnPronunciation,
+            translationBn: bnTranslation,
+            translationEn: enTranslation,
+            juz: ar.juz,
+            page: ar.page,
+            isSajdah: !!ar.sajdah,
+          };
         }
+      );
 
-        // Generate authentic, pristine Bengali pronunciation with full vocalization
-        const bnPronunciation = getBengaliPronunciation(
-          surahNumber,
-          ar.numberInSurah,
-          textAr,
-          rawTransliteration
-        );
-
-        // Precise automatic Tajweed markup parser:
-        // Highlights nun/meem shaddah (ghunnah), qalqalah letters with sukun, madd
-        // Note: Keep base character with combining diacritics attached together so font rendering is never broken
-        const tajweedAr = textAr
-          .replace(/(إِنَّ|أَنَّ|ثُمَّ|عَمَّ|مِّن|مَّآ|[نم][َّّ])/g, '<span class="tajweed-ghunnah">$1</span>')
-          .replace(/([قطبجد][ْۡ])/g, '<span class="tajweed-qalqalah">$1</span>')
-          .replace(/([ء-يٱ-ۓ][\u064B-\u065F\u0670]?[\u0653\u06E4]|آ|ۤ)/g, '<span class="tajweed-madd">$1</span>');
-
-        return {
-          numberInSurah: ar.numberInSurah,
-          numberInQuran: ar.number,
-          textArabic: textAr,
-          textArabicTajweed: tajweedAr,
-          transliterationBn: bnPronunciation,
-          translationBn: bnTranslation,
-          translationEn: enTranslation,
-          juz: ar.juz,
-          page: ar.page,
-          isSajdah: !!ar.sajdah,
-        };
-      });
-
-      SURAH_CACHE.set(surahNumber, items);
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem(`noor_quran_surah_cache_v8_${surahNumber}`, JSON.stringify(items));
-        } catch {
-          // ignore quota limits
+      if (items.length > 0) {
+        SURAH_CACHE.set(surahNumber, items);
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify(items));
+          } catch {
+            // ignore quota limits
+          }
         }
+        return items;
       }
-      return items;
     }
   } catch (err) {
     console.warn(`Could not fetch live surah ${surahNumber}:`, err);
   }
 
-  // Complete Offline Fallback for any of the 114 Surahs
-  const offlineAyahs = generateOfflineSurahAyahs(surahNumber);
-  SURAH_CACHE.set(surahNumber, offlineAyahs);
-  return offlineAyahs;
-}
-
-const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-function toArabicDigits(n: number | string): string {
-  return n.toString().split('').map(c => ARABIC_DIGITS[parseInt(c, 10)] || c).join('');
-}
-
-const BENGALI_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
-function toBengaliDigits(n: number | string): string {
-  return n.toString().split('').map(c => BENGALI_DIGITS[parseInt(c, 10)] || c).join('');
-}
-
-export function generateOfflineSurahAyahs(surahNumber: number): AyahItem[] {
-  const meta = SURAH_LIST.find((s) => s.number === surahNumber);
-  if (!meta) return [];
-
-  // Authentic openings based on Muqatta'at or Surah style
-  let openingAr = surahNumber === 1 ? 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ' : `سُورَةُ ${meta.nameArabic}`;
-  let openingBn = surahNumber === 1 ? 'শুরু করছি আল্লাহর নামে যিনি পরম করুণাময়, অতি দয়ালু।' : `পবিত্র কুরআনুল কারীমের সূরা ${meta.nameBangla}-এর সূচনা।`;
-  let openingTrans = surahNumber === 1 ? 'বিসমিল্লাহির রাহমানির রাহিম' : `সূরা ${meta.nameBangla}`;
-
-  if ([2, 3, 29, 30, 31, 32].includes(surahNumber)) {
-    openingAr = 'الم';
-    openingBn = 'আলিফ-লাম-মীম (আল্লাহ ছাড়া এর প্রকৃত অর্থ কেউ জানে না)।';
-    openingTrans = 'আলিফ-লাম-মীম';
-  } else if ([7].includes(surahNumber)) {
-    openingAr = 'المص';
-    openingBn = 'আলিফ-লাম-মীম-সোয়াদ।';
-    openingTrans = 'আলিফ-লাম-মীম-সোয়াদ';
-  } else if ([10, 11, 12, 14, 15].includes(surahNumber)) {
-    openingAr = 'الر ۚ تِلْكَ آيَاتُ الْكِتَابِ الْحَكِيمِ';
-    openingBn = 'আলিফ-লাম-রা; এগুলো প্রজ্ঞাময় কিতাবের আয়াত।';
-    openingTrans = 'আলিফ-লাম-রা, তিলকা আয়াতুল কিতাবিল হাকীম';
-  } else if ([13].includes(surahNumber)) {
-    openingAr = 'المر ۚ تِلْكَ آيَاتُ الْكِتَابِ';
-    openingBn = 'আলিফ-লাম-মীম-রা; এগুলো সেই কিতাবের আয়াত।';
-    openingTrans = 'আলিফ-লাম-মীম-রা';
-  } else if ([19].includes(surahNumber)) {
-    openingAr = 'كهيعص';
-    openingBn = 'কাফ-হা-ইয়া-আইন-সোয়াদ।';
-    openingTrans = 'কাফ-হা-ইয়া-আইন-সোয়াদ';
-  } else if ([20].includes(surahNumber)) {
-    openingAr = 'طه';
-    openingBn = 'ত্বা-হা।';
-    openingTrans = 'ত্বা-হা';
-  } else if ([26, 28].includes(surahNumber)) {
-    openingAr = 'طسم';
-    openingBn = 'ত্বা-সীন-মীম।';
-    openingTrans = 'ত্বা-সীন-মীম';
-  } else if ([27].includes(surahNumber)) {
-    openingAr = 'طس ۚ تِلْكَ آيَاتُ الْقُرْآنِ وَكِتَابٍ مُّبِينٍ';
-    openingBn = 'ত্বা-সীন; এগুলো কুরআন এবং সুস্পষ্ট কিতাবের আয়াত।';
-    openingTrans = 'ত্বা-সীন';
-  } else if ([40, 41, 42, 43, 44, 45, 46].includes(surahNumber)) {
-    openingAr = 'حم';
-    openingBn = 'হা-মীম।';
-    openingTrans = 'হা-মীম';
-  } else if ([50].includes(surahNumber)) {
-    openingAr = 'ق ۚ وَالْقُرْآنِ الْمَجِيدِ';
-    openingBn = 'ক্বাফ; সম্মানিত কুরআনের শপথ।';
-    openingTrans = 'ক্বাফ, ওয়াল কুরআনিল মাজীদ';
-  } else if ([68].includes(surahNumber)) {
-    openingAr = 'ن ۚ وَالْقَلَمِ وَمَا يَسْطُرُونَ';
-    openingBn = 'নূন; শপথ কলমের এবং যা তারা লিপিবদ্ধ করে।';
-    openingTrans = 'নূন, ওয়াল ক্বালামি ওয়ামা ইয়াসতুরূন';
-  } else if (surahNumber === 18) {
-    openingAr = 'الْحَمْدُ لِلَّهِ الَّذِي أَنزَلَ عَلَىٰ عَبْدِهِ الْكِتَابَ وَلَمْ يَجْعَل لَّهُ عِوَجًا';
-    openingBn = 'সমস্ত প্রশংসা আল্লাহর, যিনি তাঁর বান্দার ওপর এই কিতাব অবতীর্ণ করেছেন এবং এতে কোনো বক্রতা রাখেননি।';
-    openingTrans = 'আলহামদু লিল্লাহিল্লাযী আনযালা ‘আলা আবদিহিল কিতাবা ওয়া লাম ইয়াজ’আল লাহু ইওয়াজা';
-  } else if (surahNumber === 36) {
-    openingAr = 'يس ۝ وَالْقُرْآنِ الْحَكِيمِ ۝ إِنَّكَ لَمِنَ الْمُرْسَلِينَ';
-    openingBn = 'ইয়া-সীন। প্রজ্ঞাময় কুরআনের শপথ। নিশ্চয়ই আপনি রাসূলগণের অন্যতম।';
-    openingTrans = 'ইয়া-সীন, ওয়াল কুরআনিল হাকীম, ইন্নাকা লামিনাল মুরসালীন';
-  } else if (surahNumber === 55) {
-    openingAr = 'الرَّحْمَٰنُ ۝ عَلَّمَ الْقُرْآنَ ۝ خَلَقَ الْإِنسَانَ ۝ عَلَّمَهُ الْبَيَانَ';
-    openingBn = 'পরম করুণাময় আল্লাহ। তিনি শিক্ষা দিয়েছেন কুরআন। তিনি সৃষ্টি করেছেন মানুষ। তিনি তাকে শিখিয়েছেন ভাব প্রকাশ করতে।';
-    openingTrans = 'আর-রাহমান, আল্লামাল কুরআন, খালাকাল ইনসান, আল্লামাহুল বায়ান';
-  } else if (surahNumber === 56) {
-    openingAr = 'إِذَا وَقَعَتِ الْوَاقِعَةُ ۝ لَيْسَ لِوَقْعَتِهَا كَاذِبَةٌ';
-    openingBn = 'যখন কিয়ামত সংঘটিত হবে, যার সংঘটন অস্বীকার করার মতো কোনো অবকাশ থাকবে না।';
-    openingTrans = 'ইযা ওয়াকা’আতিল ওয়াক্বি’আহ, লাইসা লিওয়াক্ব’আতিহা কাযিবাহ';
-  } else if (surahNumber === 67) {
-    openingAr = 'تَبَارَكَ الَّذِي بِيَدِهِ الْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ';
-    openingBn = 'বরকতময় তিনি যাঁর হাতে সর্বময় কর্তৃত্ব এবং তিনি সব কিছুর ওপর সর্বশক্তিমান।';
-    openingTrans = 'তাবারাকাল্লাযী বিয়াদিহিল মুলকু ওয়াহুওয়া ‘আলা কুল্লি শাইয়িন ক্বাদীর';
-  } else if (surahNumber === 93) {
-    openingAr = 'وَالضُّحَىٰ ۝ وَاللَّيْلِ إِذَا سَجَىٰ';
-    openingBn = 'শপথ পূর্বাহ্নের রৌদ্রের এবং শপথ রজনীর যখন তা নিঝুম হয়ে যায়।';
-    openingTrans = 'ওয়াদ্দুহা, ওয়াল্লাইলি ইযা সাজা';
-  } else if (surahNumber === 94) {
-    openingAr = 'أَلَمْ نَشْرَحْ لَكَ صَدْرَكَ';
-    openingBn = 'আমি কি আপনার বক্ষকে প্রশস্ত করে দেইনি?';
-    openingTrans = 'আলাম নাশরাহ লাকা সাদরাক';
-  } else if (surahNumber === 95) {
-    openingAr = 'وَالتِّينِ وَالزَّيْتُونِ ۝ وَطُورِ سِينِينَ';
-    openingBn = 'শপথ তীন ও যাইতুন ফলের এবং সিনাই পর্বতের।';
-    openingTrans = 'ওয়াত্তীনি ওয়াযযাইতূন, ওয়াতূরি সীনীন';
-  } else if (surahNumber === 97) {
-    openingAr = 'إِنَّا أَنزَلْنَاهُ فِي لَيْلَةِ الْقَدْرِ';
-    openingBn = 'নিশ্চয়ই আমি একে নাযিল করেছি কদরের মহিমান্বিত রজনীতে।';
-    openingTrans = 'ইন্না আনযালনাহু ফী লাইলাতিল ক্বাদর';
-  } else if (surahNumber === 103) {
-    openingAr = 'وَالْعَصْرِ ۝ إِنَّ الْإِنسَانَ لَفِي خُسْرٍ';
-    openingBn = 'শপথ কালের! নিশ্চয়ই মানুষ চরম ক্ষতিগ্রস্ততায় নিমজ্জিত।';
-    openingTrans = 'ওয়াল ‘আসর, ইন্নাল ইনসানা লাফী খুসর';
-  } else if (surahNumber === 105) {
-    openingAr = 'أَلَمْ تَرَ كَيْفَ فَعَلَ رَبُّكَ بِأَصْحَابِ الْفِيلِ';
-    openingBn = 'আপনি কি দেখেননি আপনার রব হস্তীওয়ালাদের সাথে কিরূপ আচরণ করেছিলেন?';
-    openingTrans = 'আলাম তারা কাইফা ফা’আলা রাব্বুকা বিআসহাবিল ফীল';
-  } else if (surahNumber === 108) {
-    openingAr = 'إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ ۝ فَصَلِّ لِرَبِّكَ وَانْحَرْ';
-    openingBn = 'নিশ্চয়ই আমি আপনাকে কাউসার দান করেছি। অতএব আপনার রবের উদ্দেশ্যে সালাত আদায় করুন ও কোরবানি করুন।';
-    openingTrans = 'ইন্না আ’তায়নাকাল কাওসার, ফাসাল্লি লিরাব্বিকা ওয়ানহার';
-  } else if (surahNumber === 109) {
-    openingAr = 'قُلْ يَا أَيُّهَا الْكَافِرُونَ ۝ لَا أَعْبُدُ مَا تَعْبُدُونَ';
-    openingBn = 'বলুন: হে কাফেরগণ! আমি তাদের ইবাদত করি না যাদের ইবাদত তোমরা করো।';
-    openingTrans = 'ক্বুল ইয়া আইয়ুহাল কাফিরূন, লা আ’বুদু মা তা’বুদূন';
-  } else if (surahNumber === 110) {
-    openingAr = 'إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ';
-    openingBn = 'যখন আসবে আল্লাহর সাহায্য ও বিজয়।';
-    openingTrans = 'ইযা জাআ নাসরুল্লাহি ওয়াল ফাতহ';
-  } else if (surahNumber === 111) {
-    openingAr = 'تَبَّتْ يَدَا أَبِي لَهَبٍ وَتَبَّ';
-    openingBn = 'ধ্বংস হোক আবু লাহাবের দুই হাত এবং সে নিজেও ধ্বংস হোক।';
-    openingTrans = 'তাব্বাত ইয়াদা আবী লাহাবিও ওয়াতাব্ব';
-  } else if (surahNumber === 112) {
-    openingAr = 'قُلْ هُوَ اللَّهُ أَحَدٌ ۝ اللَّهُ الصَّمَدُ';
-    openingBn = 'বলুন: তিনিই আল্লাহ, একক ও অদ্বিতীয়। আল্লাহ কারো মুখাপেক্ষী নন, সবাই তাঁর মুখাপেক্ষী।';
-    openingTrans = 'ক্বুল হুয়াল্লাহু আহাদ, আল্লাহুস সামাদ';
-  } else if (surahNumber === 113) {
-    openingAr = 'قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ۝ مِن شَرِّ مَا خَلَقَ';
-    openingBn = 'বলুন: আমি আশ্রয় চাই প্রভাতের রবের কাছে, তিনি যা সৃষ্টি করেছেন তার অনিষ্ট থেকে।';
-    openingTrans = 'ক্বুল আ’ঊযু বিরাব্বিল ফালাক্ব, মিন শাররি মা খালাক্ব';
-  } else if (surahNumber === 114) {
-    openingAr = 'قُلْ أَعُوذُ بِرَبِّ النَّاسِ ۝ مَلِكِ النَّاسِ ۝ إِلَٰهِ النَّاسِ';
-    openingBn = 'বলুন: আমি আশ্রয় প্রার্থনা করছি মানুষের রবের কাছে, মানুষের অধিপতির কাছে, মানুষের সত্য উপাস্যের কাছে।';
-    openingTrans = 'ক্বুল আ’ঊযু বিরাব্বিন নাস, মালিকিন নাস, ইলাহিন নাস';
-  }
-
-  const items: AyahItem[] = [];
-  const count = meta.numberOfAyahs;
-  const nextSurah = SURAH_LIST.find((s) => s.number === surahNumber + 1);
-  const endPage = nextSurah ? nextSurah.pageStart : 604;
-  const pageRange = Math.max(1, endPage - meta.pageStart + 1);
-
-  for (let i = 1; i <= count; i++) {
-    const pageNum = meta.pageStart + Math.min(pageRange - 1, Math.floor(((i - 1) / count) * pageRange));
-    if (i === 1) {
-      items.push({
-        numberInSurah: 1,
-        numberInQuran: (meta.number * 50) + 1,
-        textArabic: openingAr,
-        textArabicTajweed: openingAr,
-        transliterationBn: openingTrans,
-        translationBn: openingBn,
-        translationEn: `In the name of Allah, Most Gracious, Most Merciful. [Surah ${meta.nameEnglish}]`,
-        juz: meta.juzStart,
-        page: pageNum,
-      });
-    } else {
-      items.push({
-        numberInSurah: i,
-        numberInQuran: (meta.number * 50) + i,
-        textArabic: `۞ سُورَةُ ${meta.nameArabic} ۝ الآيَةُ ${toArabicDigits(i)}`,
-        textArabicTajweed: `۞ سُورَةُ ${meta.nameArabic} ۝ الآيَةُ ${toArabicDigits(i)}`,
-        transliterationBn: `সূরা ${meta.nameBangla} · আয়াত ${toBengaliDigits(i)}`,
-        translationBn: `[সূরা ${meta.nameBangla}: আয়াত ${toBengaliDigits(i)}] · পবিত্র কুরআনুল কারীমের নির্ভরযোগ্য প্রমিত পাঠ।`,
-        translationEn: `[Surah ${meta.nameEnglish}: Ayah ${i}]`,
-        juz: meta.juzStart,
-        page: pageNum,
-      });
-    }
-  }
-
-  return items;
+  // If live fetch failed and no cache exists, return empty array so UI can show clean retry state
+  return [];
 }

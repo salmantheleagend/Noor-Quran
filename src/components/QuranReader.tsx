@@ -731,8 +731,8 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
       {/* =========================================================================
           TOP UNIFIED NAVIGATION BAR (Clean, non-colliding, mobile-ergonomic)
           ========================================================================= */}
-      <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-[#0E1416]/95 backdrop-blur-md border-b border-[#E7D9DE] dark:border-[#22353B] transition-colors shadow-2xs">
-        <div className="max-w-4xl mx-auto px-2 sm:px-4 py-2 flex items-center justify-between gap-1.5 sm:gap-2">
+      <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-[#0E1416]/95 backdrop-blur-md border-b border-[#E7D9DE] dark:border-[#22353B] transition-colors shadow-2xs pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-2">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 flex items-center justify-between gap-1.5 sm:gap-2">
           {/* Left Zone: Back Button + Surah Selector */}
           <div className="flex items-center gap-1.5 min-w-0 flex-1">
             {onBack && (
@@ -1087,11 +1087,11 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
             </div>
           )}
 
-          {/* Static Centered Bismillah Header for Each Surah (except Surah 9 At-Tawbah) */}
-          {activeSurah !== 9 ? (
+          {/* Static Centered Bismillah Header for Surahs 2-114 (except Surah 9 At-Tawbah and Surah 1 where Bismillah is Ayah 1) */}
+          {activeSurah !== 9 && activeSurah !== 1 ? (
             <div
               className={`my-4 py-4 px-4 sm:px-6 rounded-3xl transition-all duration-300 text-center shadow-xs ${
-                playingAyahKey === `${activeSurah}_bismillah` || (activeSurah === 1 && playingAyahKey === '1_1' && isPlaying)
+                playingAyahKey === `${activeSurah}_bismillah`
                   ? 'bg-linear-to-b from-[#F3FAF9] via-white to-[#F3FAF9] dark:from-[#0C454B] dark:via-[#083B40] dark:to-[#0C454B] border-2 border-[#0F5F62] ring-4 ring-[#B9E2DD]/40 shadow-lg scale-[1.01]'
                   : 'bg-white dark:bg-[#0C454B] border border-[#D7E9E7] dark:border-[#13545A]'
               }`}
@@ -1128,20 +1128,20 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                 <button
                   onClick={() => {
                     triggerHaptic(15);
-                    const isBismillahPlaying = playingAyahKey === `${activeSurah}_bismillah` || (activeSurah === 1 && playingAyahKey === '1_1' && isPlaying);
+                    const isBismillahPlaying = playingAyahKey === `${activeSurah}_bismillah`;
                     if (isBismillahPlaying) {
                       if (audioRef.current) audioRef.current.pause();
                       setIsPlaying(false);
                       setPlayingAyahKey(null);
                     } else {
                       playAyahDirect(1, 1);
-                      setPlayingAyahKey(activeSurah === 1 ? '1_1' : `${activeSurah}_bismillah`);
+                      setPlayingAyahKey(`${activeSurah}_bismillah`);
                     }
                   }}
                   className="flex items-center gap-1.5 hover:underline cursor-pointer py-1 px-3 rounded-full hover:bg-[#F3FAF9] dark:hover:bg-[#083B40] transition-colors"
                   title={language === 'bn' ? 'বিসমিল্লাহ্ তেলাওয়াত শুনুন' : 'Listen to Bismillah Recitation'}
                 >
-                  {playingAyahKey === `${activeSurah}_bismillah` || (activeSurah === 1 && playingAyahKey === '1_1' && isPlaying) ? (
+                  {playingAyahKey === `${activeSurah}_bismillah` ? (
                     <>
                       <Pause className="w-3.5 h-3.5 fill-current" />
                       <span>{language === 'bn' ? 'বিরতি' : 'Pause'}</span>
@@ -1156,7 +1156,7 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                 </button>
               </div>
             </div>
-          ) : (
+          ) : activeSurah === 9 ? (
             <div className="my-3 py-2.5 px-4 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 text-center">
               <p className="text-xs text-amber-800 dark:text-amber-200 font-medium">
                 {language === 'bn'
@@ -1164,9 +1164,9 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                   : 'By established Quranic consensus, Bismillah is not recited at the start of Surah At-Tawbah.'}
               </p>
             </div>
-          )}
+          ) : null}
 
-          {/* Ayahs List - Bismillah is strictly moved OUT of this list */}
+          {/* Ayahs List */}
           {loadingAyahs ? (
             <div className="py-20 text-center space-y-3">
               <div className="w-8 h-8 rounded-full border-2 border-[#0F5F62] border-t-transparent animate-spin mx-auto" />
@@ -1176,16 +1176,42 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
                   : `Loading verses of Surah ${currentSurahMeta.nameEnglish}...`}
               </p>
             </div>
+          ) : ayahs.length === 0 ? (
+            <div className="py-14 text-center space-y-3 bg-white dark:bg-[#10235A] rounded-3xl border border-[#E7D9DE] dark:border-[#21409A]/40 p-6 shadow-xs">
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                {language === 'bn'
+                  ? `সূরা ${currentSurahMeta.nameBangla}-এর আয়াত লোড করা যায়নি`
+                  : `Could not load verses of Surah ${currentSurahMeta.nameEnglish}`}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                {language === 'bn'
+                  ? 'অনুগ্রহ করে ইন্টারনেট সংযোগ চালু করে পুনরায় চেষ্টা করুন। একবার লোড হলে সম্পূর্ণ সূরাটি অফলাইনে সংরক্ষিত থাকবে।'
+                  : 'Please check your internet connection and tap retry. Once loaded, it is saved offline.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(15);
+                  setLoadingAyahs(true);
+                  fetchSurahAyahs(activeSurah).then((data) => {
+                    setAyahs(data);
+                    setLoadingAyahs(false);
+                  });
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F5F62] hover:bg-[#0D4E50] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>{language === 'bn' ? 'পুনরায় চেষ্টা করুন' : 'Retry'}</span>
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
-              {ayahs
-                .filter((ayah) => !(activeSurah === 1 && ayah.numberInSurah === 1))
-                .map((ayah) => {
-                  const ayahKey = `${activeSurah}_${ayah.numberInSurah}`;
-                  const isPlayingThis = playingAyahKey === ayahKey && isPlaying;
-                  const isBookmarkedThis = !!bookmarkedAyahs[ayahKey];
-                  const displayedAyahNumber = activeSurah === 1 ? ayah.numberInSurah - 1 : ayah.numberInSurah;
-                  const isLastReadThis = ayah.numberInSurah === lastReadAyah;
+              {ayahs.map((ayah) => {
+                const ayahKey = `${activeSurah}_${ayah.numberInSurah}`;
+                const isPlayingThis = playingAyahKey === ayahKey && isPlaying;
+                const isBookmarkedThis = !!bookmarkedAyahs[ayahKey];
+                const displayedAyahNumber = ayah.numberInSurah;
+                const isLastReadThis = ayah.numberInSurah === lastReadAyah;
 
                   return (
                     <div
@@ -1499,23 +1525,25 @@ export const QuranReader: React.FC<QuranReaderProps> = ({
               </div>
             </div>
 
-            {/* 4 Mushaf Editions */}
+            {/* 6 Mushaf Editions */}
             <div className="space-y-1.5">
-              <span className="text-xs font-bold text-muted-slate block">মুসহাফ সংস্করণ:</span>
+              <span className="text-xs font-bold text-[#123234] dark:text-slate-300 block">মুসহাফ সংস্করণ (৬টি প্রিন্টেড মোড):</span>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {[
-                  { id: 'standard' as MushafEdition, name: 'মদিনা উসমানি' },
-                  { id: 'tajweed' as MushafEdition, name: 'কালার তাজবীদ' },
-                  { id: 'hafezi_15' as MushafEdition, name: '১৫ লাইন হাফেজি' },
-                  { id: 'nurani_easy' as MushafEdition, name: 'নূরানী সহজ পাঠ' },
+                  { id: 'standard' as MushafEdition, name: 'মদিনা উসমানি (Madani)' },
+                  { id: 'tajweed' as MushafEdition, name: 'কালার তাজবীদ (Tajweed)' },
+                  { id: 'hafezi_15' as MushafEdition, name: '১৫ লাইন হাফেজি (Hafezi)' },
+                  { id: 'indo_pak' as MushafEdition, name: 'ইন্দো-পাক (Indo-Pak)' },
+                  { id: 'nurani_easy' as MushafEdition, name: 'নূরানী সহজ পাঠ (Nurani)' },
+                  { id: 'arabic_only' as MushafEdition, name: 'শুধু আরবি (Arabic Only)' },
                 ].map((ed) => (
                   <button
                     key={ed.id}
                     onClick={() => handleSelectMushafEdition(ed.id)}
                     className={`p-2 rounded-xl border text-center font-semibold transition-all cursor-pointer ${
                       mushafEdition === ed.id
-                        ? 'bg-[#F8E8ED] dark:bg-[#1C2D5A] border-[#21409A] text-[#21409A] dark:text-[#E9B7C3] font-bold'
-                        : 'border-[#E7D9DE] dark:border-[#21409A]/40 text-slate-700 dark:text-slate-300 hover:bg-[#F8E8ED]'
+                        ? 'bg-[#F3FAF9] dark:bg-[#083B40] border-[#0F5F62] text-[#0F5F62] dark:text-[#B9E2DD] font-bold shadow-xs'
+                        : 'border-[#B9E2DD]/60 dark:border-[#0F5F62]/40 text-slate-700 dark:text-slate-300 hover:bg-[#F3FAF9]'
                     }`}
                   >
                     {ed.name}

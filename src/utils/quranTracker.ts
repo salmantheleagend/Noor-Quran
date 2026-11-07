@@ -3,6 +3,7 @@ import { SURAH_LIST } from '../data/quranData';
 export interface QuranLastRead {
   surahNumber: number;
   surahNameBn: string;
+  surahNameEn?: string;
   surahNameAr: string;
   ayahNumber: number;
   totalAyahs: number;
@@ -30,6 +31,7 @@ export function getQuranLastRead(): QuranLastRead | null {
         return {
           surahNumber: sNum,
           surahNameBn: meta.nameBangla,
+          surahNameEn: meta.nameEnglish,
           surahNameAr: meta.nameArabic,
           ayahNumber: 1,
           totalAyahs: meta.numberOfAyahs,
@@ -42,6 +44,12 @@ export function getQuranLastRead(): QuranLastRead | null {
       return null;
     }
     const parsed = JSON.parse(raw) as QuranLastRead;
+    if (!parsed.surahNameEn && parsed.surahNumber) {
+      const meta = SURAH_LIST.find((s) => s.number === parsed.surahNumber);
+      if (meta) {
+        parsed.surahNameEn = meta.nameEnglish;
+      }
+    }
     return parsed;
   } catch {
     return null;
@@ -64,6 +72,7 @@ export function saveQuranLastRead(params: {
     const record: QuranLastRead = {
       surahNumber: meta.number,
       surahNameBn: meta.nameBangla,
+      surahNameEn: meta.nameEnglish,
       surahNameAr: meta.nameArabic,
       ayahNumber: params.ayahNumber,
       totalAyahs,

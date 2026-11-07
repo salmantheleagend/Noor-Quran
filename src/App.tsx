@@ -306,7 +306,8 @@ export default function App() {
     new Date(),
     preferences.location,
     preferences.calculationMethod,
-    preferences.asrMethod
+    preferences.asrMethod,
+    preferences.prayerOffsets
   );
 
   // Monitor and deliver local prayer notifications & adhan alerts
@@ -629,7 +630,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#F3FAF9] dark:bg-[#0E1416] text-[#123234] dark:text-[#EAF2F1] flex flex-col font-sans transition-colors duration-200">
+    <div className="min-h-[100dvh] w-full flex flex-col font-sans transition-colors duration-200">
       {/* Top Header - Hidden on Quran Reader so QuranReader has its dedicated clean immersive header without collision */}
       {currentTab !== 'quran' && (
         <Header
@@ -649,7 +650,7 @@ export default function App() {
       <main
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`flex-1 w-full mx-auto ${
+        className={`flex-1 w-full mx-auto touch-pan-y ${
           currentTab === 'quran' ? 'max-w-4xl px-0 pt-0' : 'max-w-2xl px-2 sm:px-3 pt-1'
         } pb-[calc(7.4rem+env(safe-area-inset-bottom,0px))]`}
       >
@@ -668,6 +669,8 @@ export default function App() {
                 gender={preferences.gender}
                 location={preferences.location}
                 prayerTimes={prayerTimes}
+                preferences={preferences}
+                onUpdatePreferences={handleUpdatePreferences}
                 onNavigate={handleNavigate}
                 onOpenLocationModal={() => setIsLocationModalOpen(true)}
                 ramadanMode={preferences.ramadanMode}
@@ -721,9 +724,11 @@ export default function App() {
             {currentTab === 'search' && (
               <GlobalSearch
                 language={preferences.language}
-                onNavigate={(tab, surahId) => {
-                  if (surahId) {
-                    setActiveSurahToOpen(surahId);
+                onNavigate={(tab, extra) => {
+                  if (typeof extra === 'number') {
+                    setActiveSurahToOpen(extra);
+                  } else if (extra && typeof extra === 'object' && 'surah' in extra) {
+                    setActiveSurahToOpen((extra as { surah: number }).surah);
                   }
                   handleNavigate(tab);
                 }}
@@ -853,12 +858,17 @@ export default function App() {
         bottomNavSpacing={preferences.bottomNavSpacing}
       />
 
-      {/* Location Picker Modal */}
+      {/* Location Picker Modal with Real-time Google Maps Grounding */}
       {isLocationModalOpen && (
         <LocationModal
           language={preferences.language}
           currentLocation={preferences.location}
-          onSelectLocation={(loc) => handleUpdatePreferences({ location: loc })}
+          currentCalculationMethod={preferences.calculationMethod}
+          onSelectLocation={(loc, method) => {
+            const updates: Partial<UserPreferences> = { location: loc };
+            if (method) updates.calculationMethod = method;
+            handleUpdatePreferences(updates);
+          }}
           onClose={() => setIsLocationModalOpen(false)}
         />
       )}

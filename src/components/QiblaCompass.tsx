@@ -318,8 +318,8 @@ export const QiblaCompass: React.FC<QiblaCompassProps> = ({
       </div>
 
       {/* Compass Circular Dial with Fluid Framer Motion Needle Animation */}
-      <div className="flex flex-col items-center justify-center py-4">
-        <div className="relative w-72 h-72 rounded-full bg-[#0C152E] border-8 border-[#10235A] shadow-2xl flex items-center justify-center select-none overflow-hidden">
+      <div className="flex flex-col items-center justify-center py-3">
+        <div className="relative w-64 h-64 xs:w-72 xs:h-72 max-w-[84vw] max-h-[84vw] rounded-full bg-[#0C152E] border-4 xs:border-8 border-[#10235A] shadow-2xl flex items-center justify-center select-none overflow-hidden">
           {/* Compass Dial Markings with Smooth Rotation Transition */}
           <motion.div
             className="absolute inset-0 flex items-center justify-center"

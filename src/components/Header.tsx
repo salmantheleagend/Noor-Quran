@@ -46,10 +46,10 @@ export const Header: React.FC<HeaderProps> = ({
     language === 'bn' ? location.nameBn : language === 'ar' ? location.nameAr : location.name;
 
   return (
-    <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-white/95 dark:bg-[#0E1416]/95 border-b border-[#E7D9DE] dark:border-[#22353B] px-3 sm:px-4 py-2 transition-colors">
-      <div className="max-w-3xl mx-auto flex items-center justify-between gap-2">
+    <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-white/95 dark:bg-[#0E1416]/95 border-b border-[#E7D9DE] dark:border-[#22353B] px-2.5 sm:px-4 pt-[max(0.5rem,env(safe-area-inset-top,0px))] pb-2 transition-colors">
+      <div className="max-w-3xl mx-auto flex items-center justify-between gap-1.5 sm:gap-2">
         {/* Brand Zone with Back Button when in sub-screens */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 shrink">
           {currentTab !== 'home' && onBack && (
             <button
               type="button"
@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
                 triggerHaptic(15);
                 onBack();
               }}
-              className="p-1.5 -ml-1 rounded-xl bg-[#F8E8ED] dark:bg-[#18282D] text-[#083B40] dark:text-[#2DD4BF] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center border border-[#E7D9DE] dark:border-[#22353B] shadow-2xs"
+              className="p-1.5 -ml-1 rounded-xl bg-[#F8E8ED] dark:bg-[#18282D] text-[#083B40] dark:text-[#2DD4BF] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center justify-center border border-[#E7D9DE] dark:border-[#22353B] shadow-2xs shrink-0"
               title={language === 'bn' ? 'হোমে ফিরে যান' : 'Back to Home'}
               aria-label="Back"
             >
@@ -65,15 +65,15 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-[#083B40] dark:bg-[#18282D] flex items-center justify-center text-white font-arabic font-bold text-base sm:text-lg shadow-xs ring-1 ring-[#2DD4BF]/30">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl bg-[#083B40] dark:bg-[#18282D] flex items-center justify-center text-white font-arabic font-bold text-base sm:text-lg shadow-xs ring-1 ring-[#2DD4BF]/30 shrink-0">
             ن
           </div>
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-base font-bold tracking-tight text-[#1F2937] dark:text-[#EAF2F1] leading-tight truncate">
+            <h1 className="text-xs sm:text-base font-bold tracking-tight text-[#1F2937] dark:text-[#EAF2F1] leading-tight truncate">
               Noor Quran
             </h1>
             {t.appSubtitle ? (
-              <p className="text-[10px] sm:text-[10.5px] text-[#6B7280] dark:text-[#9AB2B0] font-medium truncate mt-0.5">
+              <p className="hidden xs:block text-[9.5px] sm:text-[10.5px] text-[#6B7280] dark:text-[#9AB2B0] font-medium truncate mt-0.5">
                 {t.appSubtitle}
               </p>
             ) : null}
@@ -86,15 +86,22 @@ export const Header: React.FC<HeaderProps> = ({
             triggerHaptic(15);
             onOpenLocationModal();
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F8E8ED] hover:bg-[#E9B7C3]/30 dark:bg-[#18282D] dark:hover:bg-[#1F333A] text-xs font-semibold text-[#10235A] dark:text-[#EAF2F1] transition-colors border border-[#E7D9DE] dark:border-[#22353B] max-w-[130px] sm:max-w-[160px] truncate cursor-pointer min-h-[38px]"
+          className={`flex items-center gap-1 xs:gap-1.5 px-2 xs:px-3 py-1.5 rounded-full text-[11px] xs:text-xs font-semibold transition-colors border max-w-[85px] xs:max-w-[125px] sm:max-w-[170px] truncate cursor-pointer min-h-[38px] shrink-0 ${
+            location.isMapsVerified
+              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700/60'
+              : 'bg-[#F8E8ED] hover:bg-[#E9B7C3]/30 dark:bg-[#18282D] dark:hover:bg-[#1F333A] text-[#10235A] dark:text-[#EAF2F1] border-[#E7D9DE] dark:border-[#22353B]'
+          }`}
           title={t.changeLocation}
         >
-          <MapPin className="w-3.5 h-3.5 text-[#083B40] dark:text-[#2DD4BF] shrink-0" />
+          <MapPin className={`w-3.5 h-3.5 shrink-0 ${location.isMapsVerified ? 'text-emerald-600 dark:text-emerald-400' : 'text-[#083B40] dark:text-[#2DD4BF]'}`} />
           <span className="truncate">{locationDisplay}</span>
+          {location.isMapsVerified && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Google Maps Grounding Verified" />
+          )}
         </button>
 
         {/* Actions Zone */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 xs:gap-1 shrink-0">
           {/* Language Switcher */}
           <button
             onClick={cycleLanguage}

@@ -55,7 +55,15 @@ export function calculatePrayerTimes(
   date: Date,
   location: LocationInfo,
   methodKey: string = 'IFB',
-  asrMethod: 'hanafi' | 'standard' = 'hanafi'
+  asrMethod: 'hanafi' | 'standard' = 'hanafi',
+  userOffsets?: Partial<{
+    fajr: number;
+    sunrise: number;
+    dhuhr: number;
+    asr: number;
+    maghrib: number;
+    isha: number;
+  }>
 ): PrayerTimesData {
   const jd = getJulianDate(date);
   const { declination, eqTime } = getSunPosition(jd);
@@ -133,23 +141,42 @@ export function calculatePrayerTimes(
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   };
 
+  // Apply area-specific manual offsets if provided (e.g. from Google Maps, settings or user customization)
+  const offsets = {
+    ...(location.manualOffsets || {}),
+    ...(userOffsets || {}),
+  };
+  const fajrAdj = (offsets.fajr || 0) / 60;
+  const sunriseAdj = (offsets.sunrise || 0) / 60;
+  const dhuhrAdj = (offsets.dhuhr || 0) / 60;
+  const asrAdj = (offsets.asr || 0) / 60;
+  const maghribAdj = (offsets.maghrib || 0) / 60;
+  const ishaAdj = (offsets.isha || 0) / 60;
+
+  const adjFajrHour = fajrHour + fajrAdj;
+  const adjSunriseHour = sunriseHour + sunriseAdj;
+  const adjDhuhrHour = dhuhrHour + dhuhrAdj;
+  const adjAsrHour = asrHour + asrAdj;
+  const adjSunsetHour = sunsetHour + maghribAdj;
+  const adjIshaHour = ishaHour + ishaAdj;
+
   // Prohibited prayer times:
   // 1. Sunrise prohibited (from sunrise to ~15 min after)
-  const sunriseProhibitedEndHour = sunriseHour + 15 / 60;
+  const sunriseProhibitedEndHour = adjSunriseHour + 15 / 60;
   // 2. Zawal / exact noon (from 10 min before noon to noon)
   const zawalStartHour = noon - 10 / 60;
-  const zawalEndHour = dhuhrHour;
+  const zawalEndHour = adjDhuhrHour;
   // 3. Sunset prohibited (from 15 min before sunset until sunset)
-  const sunsetProhibitedStartHour = sunsetHour - 15 / 60;
+  const sunsetProhibitedStartHour = adjSunsetHour - 15 / 60;
 
   // Sahri warning: 10 minutes before Fajr
-  const sahriWarningHour = fajrHour - 10 / 60;
-  const sahriEndHour = fajrHour;
+  const sahriWarningHour = adjFajrHour - 10 / 60;
+  const sahriEndHour = adjFajrHour;
 
   // Tahajjud: Last 1/3rd of night until Subh Sadiq (Fajr start / Sahri end)
-  const nightDuration = (24 - sunsetHour) + fajrHour;
-  const tahajjudStartHour = sunsetHour + (nightDuration * (2 / 3));
-  const tahajjudEndHour = fajrHour; // Ends precisely at Subh Sadiq (dawn)
+  const nightDuration = (24 - adjSunsetHour) + adjFajrHour;
+  const tahajjudStartHour = adjSunsetHour + (nightDuration * (2 / 3));
+  const tahajjudEndHour = adjFajrHour; // Ends precisely at Subh Sadiq (dawn)
 
   // Nafl Prayer Time Windows:
   // 1. Ishraq: starts 15 min after sunrise (when prohibited sunrise window ends) to ~1h 45m after sunrise
@@ -161,17 +188,17 @@ export function calculatePrayerTimes(
   const chashtEndHour = zawalStartHour;
 
   // 3. Awwabin: starts 15 min after Maghrib (after 3 fardh + 2 sunnah) until Isha
-  const awwabinStartHour = sunsetHour + 15 / 60;
-  const awwabinEndHour = ishaHour;
+  const awwabinStartHour = adjSunsetHour + 15 / 60;
+  const awwabinEndHour = adjIshaHour;
 
   return {
-    fajr: formatTime(fajrHour),
+    fajr: formatTime(adjFajrHour),
     sunrise: formatTime(sunriseHour),
-    dhuhr: formatTime(dhuhrHour),
-    asr: formatTime(asrHour),
-    sunset: formatTime(sunsetHour),
-    maghrib: formatTime(sunsetHour),
-    isha: formatTime(ishaHour),
+    dhuhr: formatTime(adjDhuhrHour),
+    asr: formatTime(adjAsrHour),
+    sunset: formatTime(adjSunsetHour),
+    maghrib: formatTime(adjSunsetHour),
+    isha: formatTime(adjIshaHour),
     tahajjudStart: formatTime(tahajjudStartHour),
     tahajjudEnd: formatTime(tahajjudEndHour),
     ishraqStart: formatTime(ishraqStartHour),

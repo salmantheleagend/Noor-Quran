@@ -1,10 +1,10 @@
 import {
   SURAH_LIST,
   CURATED_SURAH_DATA,
+  PAGE_2_AL_BAQARAH_OFFLINE,
   stripBismillahPrefix,
   stripBismillahFromTranslation,
   normalizeQuranArabic,
-  generateOfflineSurahAyahs,
 } from '../data/quranData';
 import { AyahItem } from '../types';
 
@@ -248,23 +248,28 @@ export async function fetchMushafPage(pageNumber: number): Promise<MushafPageDat
     }
   }
 
-  // Universal Offline Fallback for ANY page 1 to 604 (100% feature parity with online mode)
+  // Offline fallback only for pre-bundled verified pages (Page 1, 2, 604)
   const offlineFallbackAyahs = getOfflineAyahsForPage(p);
-  const fallbackPageData: MushafPageData = {
-    pageNumber: p,
-    juzNumber: getJuzForPage(p),
-    surahs: getSurahsForPage(p),
-    ayahs: offlineFallbackAyahs,
-  };
-  PAGE_CACHE.set(p, fallbackPageData);
-  return fallbackPageData;
+  if (offlineFallbackAyahs && offlineFallbackAyahs.length > 0) {
+    const fallbackPageData: MushafPageData = {
+      pageNumber: p,
+      juzNumber: getJuzForPage(p),
+      surahs: getSurahsForPage(p),
+      ayahs: offlineFallbackAyahs,
+    };
+    PAGE_CACHE.set(p, fallbackPageData);
+    return fallbackPageData;
+  }
+
+  // If no authentic data is available, return null so UI can present retry button
+  return null;
 }
 
 /**
- * Universal Offline Ayahs lookup & generator for all 604 pages
+ * Verified Offline Ayahs lookup for pre-bundled pages (1, 2, 604)
  */
 function getOfflineAyahsForPage(pageNum: number): MushafPageAyah[] {
-  // Page 1 is Surah Al-Fatihah
+  // Page 1 is Surah Al-Fatihah (All 7 authentic verses)
   if (pageNum === 1 && CURATED_SURAH_DATA[1]) {
     const sMeta = SURAH_LIST[0];
     return CURATED_SURAH_DATA[1].map((it) => {
@@ -285,10 +290,10 @@ function getOfflineAyahsForPage(pageNum: number): MushafPageAyah[] {
     });
   }
 
-  // Page 2 is Surah Al-Baqarah (Verses 1-5)
-  if (pageNum === 2 && CURATED_SURAH_DATA[2]) {
+  // Page 2 is Surah Al-Baqarah (Verses 1-5 authentic text)
+  if (pageNum === 2) {
     const sMeta = SURAH_LIST[1];
-    return CURATED_SURAH_DATA[2].map((it) => {
+    return PAGE_2_AL_BAQARAH_OFFLINE.map((it) => {
       let textAr = normalizeQuranArabic(it.textArabic);
       if (it.numberInSurah === 1) textAr = stripBismillahPrefix(textAr);
       return {
@@ -307,11 +312,11 @@ function getOfflineAyahsForPage(pageNum: number): MushafPageAyah[] {
     });
   }
 
-  // Page 604 is Ikhlas, Falaq, Nas
+  // Page 604 is Ikhlas, Falaq, Nas (all complete authentic verses)
   if (pageNum === 604) {
     const res: MushafPageAyah[] = [];
     [112, 113, 114].forEach((sNum) => {
-      const sAyahs = CURATED_SURAH_DATA[sNum] || generateOfflineSurahAyahs(sNum);
+      const sAyahs = CURATED_SURAH_DATA[sNum];
       const sMeta = SURAH_LIST.find((s) => s.number === sNum);
       if (sAyahs && sMeta) {
         sAyahs.forEach((it) => {
@@ -336,53 +341,7 @@ function getOfflineAyahsForPage(pageNum: number): MushafPageAyah[] {
     if (res.length > 0) return res;
   }
 
-  // Universal page assembler for any page 2..603
-  const surahsOnPage = getSurahsForPage(pageNum);
-  const result: MushafPageAyah[] = [];
-
-  for (const s of surahsOnPage) {
-    const sMeta = SURAH_LIST.find((item) => item.number === s.number);
-    if (!sMeta) continue;
-
-    const allSurahAyahs = CURATED_SURAH_DATA[s.number] || generateOfflineSurahAyahs(s.number);
-    if (!allSurahAyahs || allSurahAyahs.length === 0) continue;
-
-    // Determine how many pages this surah spans in standard Madani Mushaf
-    const nextSurah = SURAH_LIST.find((item) => item.number === s.number + 1);
-    const surahEndPage = nextSurah ? Math.max(sMeta.pageStart, nextSurah.pageStart - 1) : 604;
-    const pageSpan = Math.max(1, surahEndPage - sMeta.pageStart + 1);
-    const pageOffset = Math.max(0, Math.min(pageSpan - 1, pageNum - sMeta.pageStart));
-
-    const totalAyahs = allSurahAyahs.length;
-    const ayahsPerPage = Math.max(1, Math.ceil(totalAyahs / pageSpan));
-    const startIdx = pageOffset * ayahsPerPage;
-    const endIdx = Math.min(totalAyahs, startIdx + ayahsPerPage);
-
-    const slice = allSurahAyahs.slice(startIdx, endIdx);
-    const finalAyahs = slice.length > 0 ? slice : allSurahAyahs.slice(Math.max(0, totalAyahs - 5));
-
-    finalAyahs.forEach((it) => {
-      let textAr = normalizeQuranArabic(it.textArabic);
-      if (s.number !== 1 && it.numberInSurah === 1) {
-        textAr = stripBismillahPrefix(textAr);
-      }
-      result.push({
-        numberInQuran: it.numberInQuran,
-        numberInSurah: it.numberInSurah,
-        surahNumber: s.number,
-        surahNameArabic: sMeta.nameArabic,
-        surahNameBangla: sMeta.nameBangla,
-        textArabic: textAr,
-        textArabicTajweed: applyAccessibleTajweed(textAr),
-        translationBn: it.translationBn,
-        juz: getJuzForPage(pageNum),
-        page: pageNum,
-        isFirstAyahOfSurah: it.numberInSurah === 1,
-      });
-    });
-  }
-
-  return result;
+  return [];
 }
 
 /**

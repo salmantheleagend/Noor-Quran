@@ -157,70 +157,56 @@ export const MoreMenu: React.FC<MoreMenuProps> = ({
         <ChevronRight className="w-4 h-4 text-[#5E7475] dark:text-[#B9E2DD]/70" />
       </button>
 
-      {/* Professional Founder & About Card */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-[#142042] border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-sm space-y-3.5 text-[#1F2937] dark:text-[#F8E8ED]">
-        {/* Section Header */}
-        <div className="flex items-center justify-between border-b border-[#E7D9DE] dark:border-[#1C2D5A] pb-2.5">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#21409A] dark:text-[#E9B7C3]">
-            {language === 'bn' ? 'নূর কুরআন সম্পর্কে' : 'About Noor Quran'}
-          </span>
-          <span className="text-[10px] text-[#6B7280] dark:text-slate-400 font-medium">
-            Noor Quran · v2.5
+      {/* Minimal Executive About Noor Quran Card */}
+      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0C152B] border border-slate-200 dark:border-[#1E2D55] shadow-2xs space-y-3 text-slate-800 dark:text-slate-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-xs font-bold text-teal-900 dark:text-teal-300">
+              {language === 'bn' ? 'নূর কুরআন' : 'Noor Quran'}
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#131D38] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#1E2D55]">
+            v2.5 · ১০০% বিজ্ঞাপনমুক্ত
           </span>
         </div>
 
-        {/* Founder Bio */}
-        <div className="flex items-center gap-3">
-          <div className="w-13 h-13 rounded-2xl overflow-hidden border border-[#E7D9DE] dark:border-[#1C2D5A] shadow-xs shrink-0 bg-[#F8E8ED] dark:bg-[#10235A]">
-            <img
-              src={founderDp}
-              onError={(e) => {
-                e.currentTarget.src = FOUNDER_REMOTE_DP;
-              }}
-              alt="Engr. Mohammad Muzahidul Islam"
-              className="w-full h-full object-cover object-top"
-              loading="eager"
-            />
-          </div>
-          <div className="space-y-0.5 min-w-0">
-            <h4 className="text-sm sm:text-base font-bold text-[#10235A] dark:text-white truncate">
-              Engr. Mohammad Muzahidul Islam (Salman)
-            </h4>
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-[#21409A] dark:text-[#E9B7C3] font-semibold">
-              <span>{language === 'bn' ? 'উদ্যোগ ও প্রযুক্তি · Noor Quran' : 'Lead Creator & Engineer · Noor Quran'}</span>
-              <span>·</span>
-              <span className="text-[#6B7280] dark:text-slate-400 font-normal">
-                {language === 'bn' ? 'Electrical Engineer' : 'Electrical Engineer'}
-              </span>
+        {/* Founder Bio Row */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-amber-400/30 shadow-2xs shrink-0 bg-[#0E1A33]">
+              <img
+                src={founderDp}
+                onError={(e) => {
+                  e.currentTarget.src = FOUNDER_REMOTE_DP;
+                }}
+                alt="Engr. Mohammad Muzahidul Islam"
+                className="w-full h-full object-cover object-top"
+                loading="eager"
+              />
+              <span className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-1 ring-white dark:ring-[#0E1A33]" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                Engr. Mohammad Muzahidul Islam
+              </h4>
+              <p className="text-[11px] text-teal-700 dark:text-teal-300 font-medium truncate">
+                Electrical Engineer · Lead Developer
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Short Intro */}
-        <p className="text-xs text-[#4B5563] dark:text-slate-300 leading-relaxed bg-[#F8E8ED]/50 dark:bg-[#10235A]/40 p-3 rounded-2xl border border-[#E7D9DE] dark:border-[#24386E]">
-          {language === 'bn'
-            ? '“কুরআন, সালাত ও দৈনন্দিন ইবাদতের জন্য নির্ভরযোগ্য ডিজিটাল সহায়তা সহজে পৌঁছে দেওয়ার উদ্দেশ্যে নূর কুরআন তৈরি হয়েছে।”'
-            : '"Noor Quran was created to provide reliable digital assistance for Quran, Salah, and daily worship with ease and clarity."'}
-        </p>
-
-        {/* Founder's Message Button */}
-        <div className="space-y-2 pt-1 border-t border-[#E7D9DE] dark:border-[#1C2D5A]">
           <button
             type="button"
             onClick={() => {
               triggerHaptic(15);
               setShowDesignerModal(true);
             }}
-            className="w-full py-2.5 px-3.5 rounded-2xl bg-[#21409A] hover:bg-[#10235A] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-between cursor-pointer active:scale-[0.99]"
+            className="shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#131D38] dark:hover:bg-[#1C2C52] text-teal-800 dark:text-teal-300 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 border border-slate-200 dark:border-[#1E2D55]"
           >
-            <span>{language === 'bn' ? 'আমাদের নিবেদন ও দোয়ার আহ্বান' : "Our Dedication & Message"}</span>
-            <ChevronRight className="w-4 h-4 text-white/80" />
+            <span>{language === 'bn' ? 'বিস্তারিত' : 'Details'}</span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </button>
-          <p className="text-[11px] text-[#6B7280] dark:text-slate-400 leading-normal px-1">
-            {language === 'bn'
-              ? '“নূর কুরআনকে আরও উপকারী ও নির্ভরযোগ্য করতে আমরা কাজ করছি। অ্যাপের কোনো তথ্য বা ফিচারে ভুল চোখে পড়লে আমাদের জানান।”'
-              : '"We are constantly working to make Noor Quran more beneficial and reliable. If you notice any error in information or features, please let us know."'}
-          </p>
         </div>
       </div>
 

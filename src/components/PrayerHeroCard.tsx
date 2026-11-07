@@ -952,6 +952,8 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
               className={`text-[10px] sm:text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full border backdrop-blur-xs transition-colors ${
+                !waqtStatus.isProhibited ? 'prayer-active-glow ring-1 ring-white/30' : ''
+              } ${
                 styleId === 'classic_teal'
                   ? 'bg-[#B9E2DD]/20 text-[#B9E2DD] border-[#B9E2DD]/40'
                   : styleId === 'thuluth_gold_calligraphy'
@@ -1027,18 +1029,18 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
         </div>
 
         {/* Current Waqt Title, Next Waqt & Countdown */}
-        <div className="flex items-baseline justify-between pt-0">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs leading-tight">
+        <div className="flex items-baseline justify-between gap-2 pt-0">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white drop-shadow-xs leading-tight truncate">
               {getWaqtName(waqtStatus.currentWaqt)}
             </h2>
             {waqtStatus.isProhibited ? (
-              <p className="text-[10px] text-rose-300 font-medium flex items-center gap-1 mt-0.5">
+              <p className="text-[10px] text-rose-300 font-medium flex items-center gap-1 mt-0.5 truncate">
                 <AlertTriangle className="w-3 h-3 shrink-0" />
-                {waqtStatus.prohibitedReason}
+                <span>{waqtStatus.prohibitedReason}</span>
               </p>
             ) : (
-              <p className="text-[10.5px] text-white/80 font-medium mt-0.5">
+              <p className="text-[10px] xs:text-[10.5px] text-white/80 font-medium mt-0.5 truncate">
                 {t.nextPrayer}:{' '}
                 <strong className="text-white font-semibold">
                   {getWaqtName(waqtStatus.nextWaqt)} ({formatPrayerTime12h(waqtStatus.nextWaqtTime, language)})
@@ -1047,7 +1049,7 @@ export const PrayerHeroCard: React.FC<PrayerHeroCardProps> = ({
             )}
           </div>
 
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <span className="text-[9.5px] text-white/70 block leading-tight">
               {t.timeRemaining}
             </span>
